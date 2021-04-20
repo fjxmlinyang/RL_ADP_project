@@ -31,5 +31,4 @@ class Curve(object):
 # print(curve_1.segments)
 # curve_1.seg_update([201,100],[301,50])
 # curve_1.seg_update([50,100],[105,50])
-
 # print(curve_1.segments)
