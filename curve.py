@@ -1,3 +1,9 @@
+import numpy as np 
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
 class Curve(object):
     def __init__(self, numbers, lo_bd, up_bd):
         self.numbers = numbers
@@ -26,9 +32,24 @@ class Curve(object):
                 self.segments[i][1] = point_2_y
 
 
-# curve_1 = Curve(100, 0, 3000)
-# curve_1.seg_initial()
-# print(curve_1.segments)
-# curve_1.seg_update([201,100],[301,50])
-# curve_1.seg_update([50,100],[105,50])
-# print(curve_1.segments)
+    def output_curve(self):
+        df = pd.DataFrame (self.segments,columns=['x','y'])
+        self.curve_df =df
+
+    def show_curve(self):
+        sns.set_theme(style="darkgrid")   
+        sns.lineplot(x='x', y='y',data=self.curve_df)
+        plt.show()
+        
+
+
+curve_1 = Curve(100, 0, 3000)
+curve_1.seg_initial()
+#print(curve_1.segments)
+curve_1.seg_update([201,100],[301,50])
+curve_1.seg_update([50,100],[105,50])
+#print(curve_1.segments)
+curve_1.output_curve()
+print(curve_1.curve_df)
+curve_1.show_curve()
+
