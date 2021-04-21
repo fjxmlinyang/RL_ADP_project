@@ -14,7 +14,8 @@ class Curve(object):
     def seg_initial(self):
         segments = []
         for i in range(self.lo_bd, self.up_bd+self.steps, self.steps):
-            segments.append([i, 0])
+            value = i // self.steps
+            segments.append([i, value])
         self.segments = segments
     
     def seg_update(self, point_1, point_2):
@@ -40,16 +41,28 @@ class Curve(object):
         sns.set_theme(style="darkgrid")   
         sns.lineplot(x='x', y='y',data=self.curve_df)
         plt.show()
+    
+    def point_X(self):
+        point_df=self.curve_df
+        point_X = point_df['x'].to_list()
+        return point_X
+
+    def point_Y(self):
+        point_df = self.curve_df
+        point_Y = point_df['y'].to_list()
+        return point_Y
         
 
 
 curve_1 = Curve(100, 0, 3000)
 curve_1.seg_initial()
 #print(curve_1.segments)
-curve_1.seg_update([201,100],[301,50])
-curve_1.seg_update([50,100],[105,50])
+#curve_1.seg_update([50,100],[105,50])
 #print(curve_1.segments)
 curve_1.output_curve()
-print(curve_1.curve_df)
-curve_1.show_curve()
+#print(curve_1.curve_df)
+#curve_1.show_curve()
+point_X=curve_1.point_X()
+#print(point_X)
+print(curve_1.segments)
 
