@@ -7,11 +7,10 @@ import numpy as np
 
 #len_var is the length of the length of the dynamic variable soc_n and I_n
 
-
-class PSH_system():
+class System():
     def __init__(self, curr_model):
         self.curr_model = curr_model
-        self.Input_folder_parent = './Input_Curve/PSH-Rolling Window'
+        self.Input_folder_parent = None
         self.filename = None
         self.Input_folder = None
         self.Output_folder = None
@@ -23,8 +22,31 @@ class PSH_system():
         ret = list(df[paranameter_name])
         self.parameter[in_model_name] = ret[0]
 
+
+class Curr_Model():
+    def __init__(self, LAC_last_windows,  probabilistic, date, LAC_bhour):
+        self.LAC_last_windows = LAC_last_windows
+        self.LAC_bhour = LAC_bhour
+        self.probabilistic = probabilistic
+        self.date = date
+
+
+# class Folder_Info():
+#     def __init__(self, Input_folder_parent, Output_folder, curr_model):
+#         self.curr_model = curr_model
+#         self.Input_folder_parent = Input_folder_parent
+#         self.Output_folder = self.Output_folder
+#         self.date = self.curr_model.date
+#         self.Input_folder = self.Input_folder_parent + '/' +self.date
+#         self.filename = None
+
+
+
+class PSH_system(System):
+
     def set_up_parameter(self):
 ##这个是给标量 #how to input one by one?
+        self.Input_folder_parent = './Input_Curve/PSH-Rolling Window'
         self.Input_folder = self.Input_folder_parent +'/'+ self.curr_model.date
         self.filename = self.Input_folder +'/PSH.csv'
         self.input_parameter('GenMin', 'GenMin')
@@ -42,23 +64,11 @@ class PSH_system():
 
 
 
-class E_system():
-    def __init__(self, curr_model):
-        self.curr_model = curr_model
-        self.Input_folder_parent = './Input_Curve/PSH-Rolling Window'
-        self.filename = None
-        self.Input_folder = None
-        self.Output_folder = None
-        self.parameter = {}
-    
-    def input_parameter(self, paranameter_name, in_model_name):
-        Data = pd.read_csv(self.filename)
-        df  = pd.DataFrame(Data)
-        ret = list(df[paranameter_name])
-        self.parameter[in_model_name] = ret[0]
+class E_system(System):
 
     def set_up_parameter(self):
 ##这个是给标量 #how to input one by one?
+        self.Input_folder_parent = './Input_Curve/PSH-Rolling Window'
         self.Input_folder = self.Input_folder_parent +'/'+ self.curr_model.date 
         self.filename = self.Input_folder +  '/Reservoir.csv'
         self.input_parameter('Min', 'EMin')
@@ -75,49 +85,15 @@ class E_system():
         self.Input_folder = None
         self.filename = None
         self.Output_folder = None
-    def add_E_bd(self):
-        return 
-##这个是给固定的variable
-
-    def add_E_coeff(self):
-        return 
-
-    def add_E_name(self):
-        return 
 
 
 
-
-
-
-class LMP():
-    def __init__(self, curr_model):
-        self.LAC_last_windows = curr_model.LAC_last_windows
-        self.LAC_bhour = curr_model.LAC_bhour
-        self.probabilistic = curr_model.probabilistic
-        self.lmp_quantiles = {}
-        self.lmp_scenarios = {}
+# class LMP(system):
     
-    def set_up_LMP(self):
-        return Pass
+#     def set_up_parameter(self):
+#         return Pass
 
 
-class Curr_Model():
-    def __init__(self, LAC_last_windows,  probabilistic, date, LAC_bhour):
-        self.LAC_last_windows = LAC_last_windows
-        self.LAC_bhour = LAC_bhour
-        self.probabilistic = probabilistic
-        self.date = date
-
-
-class Folder_Info():
-    def __init__(self, Input_folder_parent, Output_folder, curr_model):
-        self.curr_model = curr_model
-        self.Input_folder_parent = Input_folder_parent
-        self.Output_folder = self.Output_folder
-        self.date = self.curr_model.date
-        self.Input_folder = self.Input_folder_parent + '/' +self.date
-        self.filename = None
 
 
 
