@@ -8,7 +8,7 @@ import numpy as np
 #len_var is the length of the length of the dynamic variable soc_n and I_n
 
 
-def Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_folder, date, RT_DA, probabilistic,point_X,point_Y,SOC_min,SOC_max,benchmark):
+def Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_folder, date, RT_DA, probabilistic, point_X, point_Y, SOC_min, SOC_max, benchmark):
     # Input_folder_parent='./Input/PSH-Rolling Window'
     # date='April 01 2019'
     # Input_folder=Input_folder_parent+'/'+date
@@ -294,21 +294,21 @@ def Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_
     #############################################################################
 
     #######the constraint for the last -N(t)Pump_max <= SOC-soc_terminal<= Pgen_max*1.1111############################################
-    for k in Ename:
-        LHS = e0[k]-Edayend
-        RHS = (len(e_time_periods)+1)*PSHmax_g[0]/PSHefficiency[0]
-        #RHS = (len(e_time_periods))*PSHmax_p[0]*PSHefficiency[0] #这个是特别的是改过不知道对错的
-        #print('e0[k]-Edayend=',  e0[k]-Edayend)
-        print('PSHmax_g is equal ',  PSHmax_p[0])
-        print('Upper Bound ', (len(e_time_periods)+1)*PSHmax_g[0]/PSHefficiency[0])
-        model.addConstr(LHS <= RHS, name='%s_%s' % ('final_upper', k))
-    for k in Ename:
-        LHS = e0[k]-Edayend
-        RHS = -(len(e_time_periods)+1)*PSHmax_p[0]*PSHefficiency[0]
-        #RHS = -(len(e_time_periods))*PSHmax_g[0]/PSHefficiency[0] #特别的`
-        print('PSHmax_p is equal ', PSHmax_p[0])
-        print('Lower Bound ',  -(len(e_time_periods)+1)*PSHmax_p[0]*PSHefficiency[0])
-        model.addConstr(LHS >= RHS, name='%s_%s' % ('final_lower', k))
+    # for k in Ename:
+    #     LHS = e0[k]-Edayend
+    #     RHS = (len(e_time_periods)+1)*PSHmax_g[0]/PSHefficiency[0]
+    #     #RHS = (len(e_time_periods))*PSHmax_p[0]*PSHefficiency[0] #这个是特别的是改过不知道对错的
+    #     #print('e0[k]-Edayend=',  e0[k]-Edayend)
+    #     print('PSHmax_g is equal ',  PSHmax_p[0])
+    #     print('Upper Bound ', (len(e_time_periods)+1)*PSHmax_g[0]/PSHefficiency[0])
+    #     model.addConstr(LHS <= RHS, name='%s_%s' % ('final_upper', k))
+    # for k in Ename:
+    #     LHS = e0[k]-Edayend
+    #     RHS = -(len(e_time_periods)+1)*PSHmax_p[0]*PSHefficiency[0]
+    #     #RHS = -(len(e_time_periods))*PSHmax_g[0]/PSHefficiency[0] #特别的`
+    #     print('PSHmax_p is equal ', PSHmax_p[0])
+    #     print('Lower Bound ',  -(len(e_time_periods)+1)*PSHmax_p[0]*PSHefficiency[0])
+    #     model.addConstr(LHS >= RHS, name='%s_%s' % ('final_lower', k))
     #############################################################################
 
 
@@ -328,7 +328,7 @@ def Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_
     for k in Ename:
         for i in range(len_var):
             bench_num = i
-            psh_max.append(point_Y[bench_num]*soc[bench_num][k])     
+            psh_max.append(point_Y[bench_num]*soc[bench_num][k])
     print(psh_max)          
     obj = quicksum(psh_max)
 ##########################################################################################

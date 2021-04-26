@@ -76,12 +76,12 @@ SOC_max=3000
 ###construct the points we want
 
 from curve import *
-benchmark=4
-curve_1 = Curve(benchmark, 0, 3000)
-curve_1.seg_initial()
-curve_1.output_curve()
-point_X=curve_1.point_X()
-point_Y=curve_1.point_Y()
+benchmark = 4
+curve1 = Curve(benchmark, 0, 3000)
+curve1.seg_initial()
+curve1.curve_initial()
+# point_X=curve_1.point_X()
+# point_Y=curve_1.point_Y()
 
 
 for i in time_periods:
@@ -92,7 +92,7 @@ for i in time_periods:
         # 1:RT price data, 0: DA price data
         RT_DA=1
         ##############################################
-        PSH_Profitmax=Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_folder, date, RT_DA, probabilistic, point_X, point_Y, SOC_min,SOC_max,benchmark)
+        PSH_Profitmax=Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_folder, date, RT_DA, probabilistic, curve1.point_X, curve1.point_Y, SOC_min,SOC_max,benchmark)
         print(start_hour+LAC_window)
         PSH_Results.append(PSH_Profitmax[1][0])
         SOC_Results.append(PSH_Profitmax[0][0])

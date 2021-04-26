@@ -33,24 +33,26 @@ class Curve(object):
                 self.segments[i][1] = point_2_y
 
 
-    def output_curve(self):
+    def curve_initial(self):
         df = pd.DataFrame (self.segments,columns=['x','y'])
-        self.curve_df =df
+        self.curve_df = df
+        self.point_X = self.curve_df['x'].to_list()
+        self.point_Y = self.curve_df['y'].to_list()
 
     def show_curve(self):
         sns.set_theme(style="darkgrid")   
         sns.lineplot(x='x', y='y',data=self.curve_df)
         plt.show()
     
-    def point_X(self):
-        point_df=self.curve_df
-        point_X = point_df['x'].to_list()
-        return point_X
+    # def point_X(self):
+    #     point_df=self.curve_df
+    #     point_X = point_df['x'].to_list()
+    #     return point_X
 
-    def point_Y(self):
-        point_df = self.curve_df
-        point_Y = point_df['y'].to_list()
-        return point_Y
+    # def point_Y(self):
+    #     point_df = self.curve_df
+    #     point_Y = point_df['y'].to_list()
+    #     return point_Y
         
 
 
@@ -59,10 +61,10 @@ curve_1.seg_initial()
 #print(curve_1.segments)
 #curve_1.seg_update([50,100],[105,50])
 #print(curve_1.segments)
-curve_1.output_curve()
+
 #print(curve_1.curve_df)
 #curve_1.show_curve()
-point_X=curve_1.point_X()
+
 #print(point_X)
 print(curve_1.segments)
 
