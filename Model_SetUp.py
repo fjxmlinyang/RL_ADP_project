@@ -49,24 +49,35 @@ class RL_OptModel_SetUp():
         return
     
     def add_e(self, var_name):
-        return model.addVars([e_system.parameter['EName']], ub=float('inf'),lb=-float('inf'), vtype="C", name=var_name)
+        return model.addVars(e_system.parameter['EName'], ub=float('inf'),lb=-float('inf'), vtype="C", name=var_name)
         
     def add_I(self, var_name):
-        return model.addVars([e_system.parameter['EName']], vtype="B", name=var_name)
+        return model.addVars(e_system.parameter['EName'], vtype="B", name=var_name)
         
     def add_psh(self, var_name):
-        return model.addVars([psh_system.parameter['PSHName']], ub=float('inf'),lb=-float('inf'),vtype="C",name=var_name)
+        return model.addVars(psh_system.parameter['PSHName'], ub=float('inf'),lb=-float('inf'),vtype="C",name=var_name)
+
+
+
+
+
 
     def set_up_variable(self):
-        #add gen/pump and e
+        #add gen/pump
         self.psh_gen = self.add_psh('psh_gen')
         self.psh_pump = self.add_psh('psh_pump')
+
+        # add e
         self.e = self.add_e('e')
         
         #add soc and I
-        
-        #curve.numbers
-
+        len_var = len(curve.point_X)-1
+        self.soc = []
+        self.I = []
+        for i in range(len_var):
+            name_num = str(i + 1)
+            self.soc.append(self.add_e('e_' + 'name_num'))
+            self.I.append(self.add_I('I_' + 'name_num'))
 
         #add d
         d = []
@@ -74,13 +85,20 @@ class RL_OptModel_SetUp():
             d.append(curve.point_X[i+1]-curve.point_X[i])
         self.d = d
 
+    def set_up_constraint(self):
 
 
 
-print(list[e_system.parameter['EName']])
+
+
+
+
+
+
+print(e_system.parameter['EName'])
 model = Model('DAMarket')
-ADP_train_model_para= CurrModel(1, 0 ,1, 'March 07 2019', 1)
+ADP_train_model_para= CurrModel(1, 0, 1, 'March 07 2019', 1)
 
 ADP_train_system = RL_OptModel_SetUp(psh_system, e_system, lmp, curve, ADP_train_model_para, model)
 ADP_train_system.set_up_variable()
-print(ADP_train_system.d)
+print(ADP_train_system.I)

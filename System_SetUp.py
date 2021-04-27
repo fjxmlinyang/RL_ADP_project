@@ -20,7 +20,7 @@ class System():
         Data = pd.read_csv(self.filename)
         df  = pd.DataFrame(Data)
         ret = list(df[paranameter_name])
-        self.parameter[in_model_name] = ret[0]
+        self.parameter[in_model_name] = ret #[0]
 
 
 class CurrModel():
@@ -107,15 +107,15 @@ class LMP(System):
         
         Data = pd.read_csv(self.filename)
         df = pd.DataFrame(Data)
-        Column_name=list(Data.columns)
+        Column_name = list(Data.columns)
         self.lmp_quantiles = []
         self.lmp_scenarios = []
-        DA_lmp=[]
+        #DA_lmp=[]???
         if self.curr_model.LAC_last_windows:
             self.Nlmp_s = 1
             # probability of each scenario is evenly distributed
             self.lmp_quantiles.append(1.0 / self.Nlmp_s)
-            if self.curr_model.RT_DA==1:
+            if self.curr_model.RT_DA == 1:
                 self.lmp_scenarios.append(list(df['RT_LMP']))
             else:
                 self.lmp_scenarios.append(list(df['DA_LMP']))

@@ -207,7 +207,7 @@ def Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_
     I = []
     ##for here we have soc_1, soc2,....; I_1, I_2,....
     for i in range(len_var):  
-        name_num=str(i+1)    
+        name_num = str(i+1)
         soc.append(add_dynamic_var('soc_'+'name_num').add_soc())
         I.append(add_dynamic_var('I_'+'name_num').add_I())
 
@@ -236,8 +236,8 @@ def Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_
 
     # Upper and lower bounds
     
-    for j in PSHname:
-        model.addConstr(psh0_gen[j] <= PSHmax_g , name='%s_%s' % ('psh_gen_max0', j))
+    for j in PSHname: #all are lists
+        model.addConstr(psh0_gen[j] <= PSHmax_g, name='%s_%s' % ('psh_gen_max0', j))
         model.addConstr(psh0_gen[j] >= PSHmin_g, name='%s_%s' % ('psh_gen_min0', j))
         model.addConstr(psh0_pump[j] <= PSHmax_p, name='%s_%s' % ('psh_pump_max0', j))
         model.addConstr(psh0_pump[j] >= PSHmin_p, name='%s_%s' % ('psh_pump_min0', j))
