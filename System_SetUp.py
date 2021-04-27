@@ -19,7 +19,8 @@ class System():
     def input_parameter(self, paranameter_name, in_model_name):
         Data = pd.read_csv(self.filename)
         df  = pd.DataFrame(Data)
-        ret = list(df[paranameter_name])
+        #ret = list(df[paranameter_name])
+        ret = df[paranameter_name]
         self.parameter[in_model_name] = ret #[0]
 
 
@@ -78,7 +79,7 @@ class ESystem(System):
         self.input_parameter('End', 'EEnd')
 
         self.Output_folder='./Output_Curve'   
-        if self.curr_model.LAC_bhour==0 or self.curr_model.LAC_last_windows:
+        if self.curr_model.LAC_bhour == 0 or self.curr_model.LAC_last_windows:
             self.input_parameter('Start', 'EStart')
         else:
             filename = self.Output_folder+'/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour-1) + '.csv'

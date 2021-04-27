@@ -234,7 +234,7 @@ def Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_
 
     #################rolling constaint############################
 
-    # Upper and lower bounds
+    # Upper and lower constraint
     
     for j in PSHname: #all are lists
         model.addConstr(psh0_gen[j] <= PSHmax_g, name='%s_%s' % ('psh_gen_max0', j))
