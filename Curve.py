@@ -43,7 +43,16 @@ class Curve(object):
         sns.set_theme(style="darkgrid")   
         sns.lineplot(x='x', y='y',data=self.curve_df)
         plt.show()
-    
+
+
+    def seg_new(self):
+        segments = []
+        for i in range(self.lo_bd, self.up_bd+self.steps, self.steps):
+            value =100- i // self.steps
+            segments.append([i, value])
+        self.segments = segments
+
+
     # def point_X(self):
     #     point_df=self.curve_df
     #     point_X = point_df['x'].to_list()
@@ -66,5 +75,7 @@ curve_1.seg_initial()
 #curve_1.show_curve()
 
 #print(point_X)
-print(curve_1.segments)
+print(len(curve_1.segments)-1)
+print(curve_1.numbers)
+print(curve_1.steps)
 

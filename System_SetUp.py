@@ -3,34 +3,11 @@ from gurobipy import *
 import gurobipy as grb
 import matplotlib.pyplot as plt
 import numpy as np
+from Curve import *
+from CurrModelPara import *
 
 
-#len_var is the length of the length of the dynamic variable soc_n and I_n
 
-class System():
-    def __init__(self, curr_model):
-        self.curr_model = curr_model
-        self.Input_folder_parent = None
-        self.filename = None
-        self.Input_folder = None
-        self.Output_folder = None
-        self.parameter = {}
-    
-    def input_parameter(self, paranameter_name, in_model_name):
-        Data = pd.read_csv(self.filename)
-        df  = pd.DataFrame(Data)
-        #ret = list(df[paranameter_name])
-        ret = df[paranameter_name]
-        self.parameter[in_model_name] = ret #[0]
-
-
-class CurrModel():
-    def __init__(self, LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour):
-        self.LAC_last_windows = LAC_last_windows
-        self.LAC_bhour = LAC_bhour
-        self.probabilistic = probabilistic
-        self.date = date
-        self.RT_DA = RT_DA
 
 
 # class Folder_Info():
@@ -42,6 +19,22 @@ class CurrModel():
 #         self.Input_folder = self.Input_folder_parent + '/' +self.date
 #         self.filename = None
 
+
+class System():
+    def __init__(self, curr_model):
+        self.curr_model = curr_model
+        self.Input_folder_parent = None
+        self.filename = None
+        self.Input_folder = None
+        self.Output_folder = None
+        self.parameter = {}
+
+    def input_parameter(self, paranameter_name, in_model_name):
+        Data = pd.read_csv(self.filename)
+        df = pd.DataFrame(Data)
+        # ret = list(df[paranameter_name])
+        ret = df[paranameter_name]
+        self.parameter[in_model_name] = ret  # [0]
 
 
 class PshSystem(System):
@@ -143,29 +136,35 @@ class LMP(System):
 
 
 
+
+
+
 # psh_folder_info = Folder_Info(Input_folder_parent, Output_folder, curr_model)
 # Curr_Model(LAC_last_windows是否是最后,  probabilistic是否是随机模型, RT_DA是否是RT, date, LAC_bhour开始时间)
 
 
 
-psh_model = CurrModel(1, 0 , 1,'March 07 2019', 1)   ##first is for last window second are stochastic, third is for the date, last is for hour
-psh_system = PshSystem(psh_model)
-psh_system.set_up_parameter()
-print(psh_system.parameter)
+# psh_model = CurrModel(1, 0 , 1,'March 07 2019', 1)   ##first is for last window second are stochastic, third is for the date, last is for hour
+# psh_system = PshSystem(psh_model)
+# psh_system.set_up_parameter()
+# print(psh_system.parameter)
+#
+# e_model = CurrModel(1, 0 ,1, 'March 07 2019', 1)   ##first is for last window second are stochastic, third is for the date, last is for hour
+# e_system = ESystem(e_model)
+# e_system.set_up_parameter()
+# print(e_system.parameter)
+#
+#
+# lmp_model = CurrModel(1, 0 ,1, 'March 07 2019', 1)
+# print(lmp_model.date)  ##first is for last window second are stochastic, third is for the date, last is for hour
+# lmp = LMP(lmp_model)
+# lmp.set_up_parameter()
+# print(lmp.lmp_quantiles)
 
-e_model = CurrModel(1, 0 ,1, 'March 07 2019', 1)   ##first is for last window second are stochastic, third is for the date, last is for hour
-e_system = ESystem(e_model)
-e_system.set_up_parameter()
-print(e_system.parameter)
-
-
-lmp_model = CurrModel(1, 0 ,1, 'March 07 2019', 1) 
-print(lmp_model.date)  ##first is for last window second are stochastic, third is for the date, last is for hour
-lmp = LMP(lmp_model)
-lmp.set_up_parameter()
-print(lmp.lmp_quantiles)
 
 
 
-    
+
+
+
 
