@@ -38,8 +38,8 @@ print('lmp_Nlmp_s=', lmp_1.Nlmp_s)
 
 print('################################## curve set up ##################################')
 curve_old = Curve(100, 0, 3000)
-curve_old.seg_initial()
-curve_old.curve_initial()
+# curve_old.seg_initial()
+# curve_old.curve_initial()
 print(curve_old.segments)
 
 
@@ -52,9 +52,32 @@ ADP_train_model_para = CurrModelPara(1, 0, 1, 'March 07 2019', 1)
 
 ADP_train_system = RLSetUp(psh_system_1, e_system_1, lmp_1, curve_old, ADP_train_model_para, model_1)
 ADP_train_system.solve_model()
+ADP_train_system.get_new_curve()
 
-point1 = ADP_train_system.optimal_soc_sum
+
 
 #print(ADP_train_system.soc)
-print(ADP_train_system.optimal_psh_pump_sum)
+print(ADP_train_system.optimal_soc_sum)
 print(ADP_train_system.optimal_profit)
+#ADP_train_system.get_important_pt()
+# print(ADP_train_system.second_point_soc_sum)
+# print(ADP_train_system.second_point_profit)
+#
+# print(ADP_train_system.update_point_1)
+# print(ADP_train_system.update_point_2)
+
+
+
+print(curve_old.segments)
+
+print(ADP_train_system.second_point_soc_sum)
+print(ADP_train_system.second_point_profit)
+print(ADP_train_system.update_point_1)
+print(ADP_train_system.update_point_2)
+print(ADP_train_system.curve.point_Y)
+print(ADP_train_system.second_curve_soc)
+print(ADP_train_system.second_curve_slope)
+
+print(ADP_train_system.new_curve_slope)
+
+print(ADP_train_system.curve.segments)

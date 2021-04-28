@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from System_SetUp import *
 from CurrModelPara import *
-
+from Curve import *
 
 class OptModelSetUp():
 
@@ -153,7 +153,7 @@ class RLSetUp(OptModelSetUp):
 
 
 
-        #get optimal soc
+    #get optimal soc
         self.optimal_soc = []
         self.optimal_psh_pump = []
         self.optimal_psh_gen= []
@@ -163,7 +163,7 @@ class RLSetUp(OptModelSetUp):
             self.optimal_soc.append(soc)
         self.optimal_soc_sum = sum(self.optimal_soc)
 
-        #get optimal_psh_gen/pump
+    #get optimal_psh_gen/pump
         for v in [v for v in self.gur_model.getVars() if 'psh_gen' in v.Varname]:
             psh = v.X
             self.optimal_psh_gen.append(psh)
@@ -174,18 +174,46 @@ class RLSetUp(OptModelSetUp):
             self.optimal_psh_pump.append(psh)
         self.optimal_psh_pump_sum = sum(self.optimal_psh_pump)
 
-        self.optimal_profit = self.culculate_pts(self.optimal_soc_sum)
+    #get optimal profit
+        self.optimal_profit = self.calculate_pts(self.optimal_soc_sum)
 
-    #here we start
-    def get_important_pt(self):
-        #need find another point
-        self.second_point_soc_sum = self.optimal_soc_sum + self.curve.steps
-        self.second_point_profit = self.culculate_pts(self.second_point_soc_sum)
-        
-    def get_new_curve(self):
-        #how can we get each new point???
 
-    def culculate_pts(self, point_X):
+
+#after we get the current self.optimal_profit and self.optimal_soc_sum, we have to update the curve
+
+
+    def get_new_curve(self, alpha = 0.5):
+        self.alpha = alpha
+    #how can we get each new curve_point_X
+        self.second_curve_soc = self.curve.point_X
+
+    #get new curve_profit
+        self.second_curve_profit = []
+        for value in self.second_curve_soc:
+            point_y = self.calculate_pts(value)
+            self.second_curve_profit.append(point_y)
+
+    #get new curve_slope
+        self.second_curve_slope = [0]
+        for index in range(1, len(self.second_curve_soc)):
+            temp_slop = (self.second_curve_profit[index]- self.second_curve_profit[index -1])/self.curve.steps
+            self.second_curve_slope.append(temp_slop)
+        self.second_curve_slope[0] = self.second_curve_slope[1]
+
+    #new curve combine with the old_slope
+        self.new_curve_slope = []
+        for i in range(len(self.second_curve_soc)):
+            _temp = (1 - self.alpha)*self.curve.point_Y[i] + self.alpha*self.second_curve_slope[i]
+            self.new_curve_slope.append(_temp) #this is the new slope we need
+
+    #new curve: self.new_curve_slope
+    #update the new curve with the two new points
+        self.get_important_pt()
+        self.curve.curve_update(self.new_curve_slope, self.update_point_1, self.update_point_2)
+
+
+    def calculate_pts(self, point_X):
+        #put the soc_sum in, we get the profit
         point_x_soc = self.x_to_soc(point_X)
         point_profit = []
         for s in range(self.lmp.Nlmp_s):
@@ -201,6 +229,7 @@ class RLSetUp(OptModelSetUp):
         return point_profit_sum
 
     def x_to_soc(self, point_X):
+        #change soc_sum to soc_1 + soc_2 + soc_3
         turn_1 = point_X // self.curve.steps
         rest = point_X % self.curve.steps
         point_x_soc = []
@@ -215,12 +244,56 @@ class RLSetUp(OptModelSetUp):
                 point_x_soc.append(0)
         return point_x_soc
 
-    #
-    # def soc_to_y(self,x):
-    #
-    # def get_new_curve_point(self):
-    #     return
-    # # need find each benchmark
+    def get_important_pt(self):
+        #need find another point #be careful boundary case
+    # get second point
+    # get second point profit
+        if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
+            self.second_point_soc_sum = self.optimal_soc_sum - self.curve.steps
+            self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
+        else:
+            self.second_point_soc_sum = self.optimal_soc_sum + self.curve.steps
+            self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
+
+    # get previous point profit
+        if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
+            self.previous_point_soc_sum = self.optimal_soc_sum -  self.curve.steps
+            self.previous_point_profit = self.calculate_pts(self.second_point_soc_sum)
+        else:
+            self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
+            self.previous_point_profit = self.calculate_pts(self.second_point_soc_sum)
+
+    #calcuate self.update_point_1/2(point_x, point_curve)
+        if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
+            #self.optimal_profit and self.optimal_soc_sum
+            #need check?
+            self.update_point_1_x = self.optimal_soc_sum
+            self.update_point_1_y = (self.optimal_profit - self.previous_point_profit) / self.curve.steps
+            self.update_point_2_x = self.optimal_profit
+            self.update_point_2_y = (self.optimal_profit - self.previous_point_profit) / self.curve.steps
+        else:
+            self.update_point_1_x = self.optimal_soc_sum
+            self.update_point_1_y = (self.optimal_profit - self.previous_point_profit)/self.curve.steps
+            self.update_point_2_x = self.second_point_soc_sum
+            self.update_point_2_y = (self.second_point_profit - self.optimal_profit)/self.curve.steps
+        self.update_point_1 = [self.update_point_1_x, self.update_point_1_y]
+        self.update_point_2 = [self.update_point_2_x, self.update_point_2_y]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # print(e_system_1.parameter['EName'])
