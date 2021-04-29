@@ -92,7 +92,7 @@ for i in time_periods:
         # 1:RT price data, 0: DA price data
         RT_DA=1
         ##############################################
-        PSH_Profitmax=Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_folder, date, RT_DA, probabilistic, curve1.point_X, curve1.point_Y, SOC_min,SOC_max,benchmark)
+        PSH_Profitmax = Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_folder, date, RT_DA, probabilistic, curve1.point_X, curve1.point_Y, SOC_min,SOC_max,benchmark)
         print(start_hour+LAC_window)
         PSH_Results.append(PSH_Profitmax[1][0])
         SOC_Results.append(PSH_Profitmax[0][0])

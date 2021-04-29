@@ -198,6 +198,7 @@ class RLSetUp(OptModelSetUp):
         for index in range(1, len(self.second_curve_soc)):
             temp_slop = (self.second_curve_profit[index]- self.second_curve_profit[index -1])/self.curve.steps
             self.second_curve_slope.append(temp_slop)
+            #change the first back
         self.second_curve_slope[0] = self.second_curve_slope[1]
 
     #new curve combine with the old_slope
