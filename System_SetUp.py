@@ -71,12 +71,15 @@ class ESystem(System):
         self.input_parameter('Name', 'EName') 
         self.input_parameter('End', 'EEnd')
 
-        self.Output_folder='./Output_Curve'   
+        self.Output_folder='./Output_Curve'
+        #here are for rolling model
         if self.curr_model.LAC_bhour == 0 or self.curr_model.LAC_last_windows:
             self.input_parameter('Start', 'EStart')
+            self.e_start_folder = self.Output_folder
         else:
-            filename = self.Output_folder+'/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour-1) + '.csv'
+            self.filename = self.Output_folder+'/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour-1) + '.csv'
             self.input_parameter('SOC', 'EStart')
+            self.e_start_folder = self.Output_folder
         self.Input_folder = None
         self.filename = None
         self.Output_folder = None
@@ -94,7 +97,7 @@ class LMP(System):
         else:
             # filename = Input_folder+'\LMP_Scenarios_' + 'T' + str(LAC_bhour) +'_DA'+ '.csv'
             if probabilistic:
-                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+self.curr_model.date+'_50' + '.csv'
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_50' + '.csv'
             else:
                 self.filename = self.Input_folder + '/prd_dataframe_wlen_'+str(24-self.curr_model.LAC_bhour)+'_'+ self.curr_model.date + '.csv'
         
@@ -119,13 +122,16 @@ class LMP(System):
                 for i in range(self.Nlmp_s):
                     # probability of each scenario is evenly distributed
                     self.lmp_quantiles.append(1.0 / self.Nlmp_s)
-                    self.lmp_scenarios.append(list(df[Column_name[i]]))
+                    ##only chang here!!!
+                    self.lmp_scenarios.append(list(df[Column_name[self.curr_model.scenario]]))
             else:
                 # for deterministic forecast, there is a singel scenario
-                self.Nlmp_s =1
+                self.Nlmp_s = 1
                 self.lmp_quantiles.append(1.0 / self.Nlmp_s)
                 # deterministic forecast is the single point prediction
                 self.lmp_scenarios.append(list(df['prd']))
+
+
         self.Input_folder = None
         self.filename = None
         self.Output_folder = None

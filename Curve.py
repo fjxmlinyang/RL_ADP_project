@@ -2,7 +2,7 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
-
+from csv import reader
 
 class Curve(object):
     def __init__(self, numbers, lo_bd, up_bd):
@@ -12,11 +12,12 @@ class Curve(object):
         self.steps = (up_bd-lo_bd) // numbers
         self.seg_initial()
         self.curve_initial()
+        self.output_initial_curve()
     
     def seg_initial(self):
         segments = []
         for i in range(self.lo_bd, self.up_bd+self.steps, self.steps):
-            value = 50 - i // self.steps
+            value = 0#50 - i // self.steps
             segments.append([i, value])
         self.segments = segments
     
@@ -36,14 +37,14 @@ class Curve(object):
 
 
     def curve_initial(self):
-        df = pd.DataFrame (self.segments,columns=['x','y'])
+        df = pd.DataFrame (self.segments, columns=['x','y'])
         self.curve_df = df
         self.point_X = self.curve_df['x'].to_list()
         self.point_Y = self.curve_df['y'].to_list()
 
     def show_curve(self):
         sns.set_theme(style="darkgrid")   
-        sns.lineplot(x='x', y='y',data=self.curve_df)
+        sns.lineplot(x='x', y='y', data=self.curve_df)
         plt.show()
 
 
@@ -53,30 +54,35 @@ class Curve(object):
             self.segments[i][1] = value
         self.seg_update(point_1, point_2)
 
-
-    # def point_X(self):
-    #     point_df = self.curve_df
-    #     point_X = point_df['x'].to_list()
-    #     return point_X
-
-    # def point_Y(self):
-    #     point_df = self.curve_df
-    #     point_Y = point_df['y'].to_list()
-    #     return point_Y
-        
+    def input_curve(self, time , scenario ):
+        _str = str(time)
+        filename = './Output_Curve' + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
+        df = pd.read_csv(filename)
+        self.segments = df.values.tolist()
+    def output_initial_curve(self):
+    #output the curve
+        for curr_time in range(24):
+            _str = str(curr_time)
+            scenario = 0
+            filename = './Output_Curve' + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
+            df = pd.DataFrame(self.segments, columns =['soc_segment','slope'])
+            df.to_csv(filename, index=False, header=True)
 
 
 curve_1 = Curve(100, 0, 3000)
 
-#print(curve_1.segments)
-#curve_1.seg_update([50,100],[105,50])
 print(curve_1.segments)
+#curve_1.input_curve()
+print(curve_1.segments)
+
+#curve_1.seg_update([50,100],[105,50])
+#print(curve_1.segments)
 
 #print(curve_1.curve_df)
 #curve_1.show_curve()
 
-print(curve_1.point_X)
-print(len(curve_1.segments)-1)
-print(curve_1.numbers)
-print(curve_1.steps)
+#print(curve_1.point_X)
+# print(len(curve_1.segments)-1)
+# print(curve_1.numbers)
+# print(curve_1.steps)
 

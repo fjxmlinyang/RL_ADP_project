@@ -87,11 +87,11 @@ class RLSetUp(OptModelSetUp):
 #psh_system, e_system, lmp, curve, curr_model_para, gur_model
     def set_up_variable(self):
     #add gen/pump
-        self.psh_gen = self.add_var_psh('psh_gen')
-        self.psh_pump = self.add_var_psh('psh_pump')
+        self.psh_gen = self.add_var_psh('psh_gen_main')
+        self.psh_pump = self.add_var_psh('psh_pump_main')
 
     # add e
-        self.e = self.add_var_e('e')
+        self.e = self.add_var_e('e_main')
 
     #add soc and I
         #self.len_var = self.curve.numbers #len(self.curve.point_X)-1
@@ -137,7 +137,7 @@ class RLSetUp(OptModelSetUp):
         print(self.profit_max)
         self.obj = quicksum(self.profit_max)
 
-
+##important function
     def solve_model(self):
         self.set_up_variable()
         self.set_up_constraint()
@@ -147,12 +147,18 @@ class RLSetUp(OptModelSetUp):
         self.gur_model.optimize()
 
         # print results for variables
-        for v in self.gur_model.getVars():
-            print("%s %f" % (v.Varname, v.X))
+        # for v in self.gur_model.getVars():
+        #     print("%s %f" % (v.Varname, v.X))
             # print("%s %f %f" % (v.Varname, v.X, v.Pi))
+        #for optimal solution
+        self.get_optimal()
+        self.output_optimal()
+        ###for curve
+        self.get_new_curve()
+        self.output_curve()
 
 
-
+    def get_optimal(self):
     #get optimal soc
         self.optimal_soc = []
         self.optimal_psh_pump = []
@@ -164,18 +170,41 @@ class RLSetUp(OptModelSetUp):
         self.optimal_soc_sum = sum(self.optimal_soc)
 
     #get optimal_psh_gen/pump
-        for v in [v for v in self.gur_model.getVars() if 'psh_gen' in v.Varname]:
+        for v in [v for v in self.gur_model.getVars() if 'psh_gen_main' in v.Varname]:
             psh = v.X
             self.optimal_psh_gen.append(psh)
         self.optimal_psh_gen_sum = sum(self.optimal_psh_gen)
-        for v in [v for v in self.gur_model.getVars() if 'psh_pump' in v.Varname]:
+        for v in [v for v in self.gur_model.getVars() if 'psh_pump_main' in v.Varname]:
             psh = v.X
             #psh0.append(-psh)
             self.optimal_psh_pump.append(psh)
         self.optimal_psh_pump_sum = sum(self.optimal_psh_pump)
+        self.output_optimal()
 
     #get optimal profit
         self.optimal_profit = self.calculate_pts(self.optimal_soc_sum)
+
+    def output_optimal(self):
+    #output the e for next time
+        filename = self.e_system.e_start_folder + '/LAC_Solution_System_SOC_'+ str(self.curr_model_para.LAC_bhour) + '.csv'
+        with open(filename, 'w') as wf:
+            wf.write('Num_Period,Reservoir_Name,SOC\n')
+            _temp = list(self.e_system.parameter['EName'])[0]
+            for v in [v for v in self.gur_model.getVars() if (_temp in v.Varname and 'e_main' in v.Varname)]:
+                self.optimal_e = v.X
+                time = 'T' + str(self.curr_model_para.LAC_bhour)
+                name = _temp
+                st = time + ',' + '%s,%.1f' % (name, self.optimal_e) + '\n'
+                wf.write(st)
+
+    def output_curve(self):
+    #output the curve
+        scenario = self.curr_model_para.scenario
+        filename = self.e_system.e_start_folder + '/Curve_'+ 'time_'+ str(self.curr_model_para.LAC_bhour)+ '_scenario_' +  str(scenario)  + '.csv'
+        df = pd.DataFrame(self.curve.segments, columns =['soc_segment','slope'])
+        df.to_csv(filename, index=False, header=True)
+
+
 
 
 
@@ -183,6 +212,7 @@ class RLSetUp(OptModelSetUp):
 
 
     def get_new_curve(self, alpha = 0.5):
+
         self.alpha = alpha
     #how can we get each new curve_point_X
         self.second_curve_soc = self.curve.point_X
@@ -211,6 +241,8 @@ class RLSetUp(OptModelSetUp):
     #update the new curve with the two new points
         self.get_important_pt()
         self.curve.curve_update(self.new_curve_slope, self.update_point_1, self.update_point_2)
+        print(self.curve.segments)
+
 
 
     def calculate_pts(self, point_X):

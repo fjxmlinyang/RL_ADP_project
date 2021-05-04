@@ -83,7 +83,7 @@ def Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_
 
     if LAC_last_windows:
         # filename = Input_folder + '\LMP_Hindsight' + '.csv'
-        filename = Input_folder + '/prd_dataframe_wlen_24_'+date + '.csv'
+        filename = Input_folder + '/prd_dataframe_wlen_24_'+ date + '.csv'
     else:
         # filename = Input_folder+'\LMP_Scenarios_' + 'T' + str(LAC_bhour) +'_DA'+ '.csv'
         if probabilistic:
@@ -382,26 +382,27 @@ def Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_
 
 
     if LAC_last_windows:
-        psh_last_window_gen=[]
-        psh_last_window_pump=[]
-        PSH=[PSH0[0]]
-        SOC=[]
-        E_shadow_price=[]
-        Dual_SOC_max=[]
-        Dual_SOC_min=[]
-        for v in [v for v in model.getVars() if 'PSH_gen' in v.Varname]:
-            psh = v.X
-            psh_last_window_gen.append(psh)
-        for v in [v for v in model.getVars() if 'PSH_pump' in v.Varname]:
-            psh = v.X
-            psh_last_window_pump.append(psh)
-        for i in range(len(psh_last_window_gen)):
-            PSH.append(psh_last_window_gen[i]-psh_last_window_pump[i])
-        for v in [v for v in model.getVars() if 'E' in v.Varname]:
-            soc = v.X
-            SOC.append(soc)
-
-        return SOC, PSH
+        a = 1
+        # psh_last_window_gen=[]
+        # psh_last_window_pump=[]
+        # PSH=[PSH0[0]]
+        # SOC=[]
+        # E_shadow_price=[]
+        # Dual_SOC_max=[]
+        # Dual_SOC_min=[]
+        # for v in [v for v in model.getVars() if 'PSH_gen' in v.Varname]:
+        #     psh = v.X
+        #     psh_last_window_gen.append(psh)
+        # for v in [v for v in model.getVars() if 'PSH_pump' in v.Varname]:
+        #     psh = v.X
+        #     psh_last_window_pump.append(psh)
+        # for i in range(len(psh_last_window_gen)):
+        #     PSH.append(psh_last_window_gen[i]-psh_last_window_pump[i])
+        # for v in [v for v in model.getVars() if 'E' in v.Varname]:
+        #     soc = v.X
+        #     SOC.append(soc)
+        #
+        # return SOC, PSH
     else:
         return SOC0, PSH0
 

@@ -75,7 +75,7 @@ SOC_max=3000
 
 ###construct the points we want
 
-from curve import *
+from Curve import *
 benchmark = 4
 curve1 = Curve(benchmark, 0, 3000)
 curve1.seg_initial()
