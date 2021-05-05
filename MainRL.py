@@ -8,9 +8,9 @@ from CurrModelPara import *
 from Curve import *
 
 
-for curr_scenario in range(1,5):
+for curr_scenario in range(1,10):
     for curr_time in range(24):
-        curr_model = CurrModelPara(1, 0, 1, 'March 07 2019', curr_time, curr_scenario)
+        curr_model = CurrModelPara(0, 1, 1, 'March 07 2019', curr_time, curr_scenario)
         #LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
         print('################################## psh_system set up ##################################')
 
@@ -38,7 +38,7 @@ for curr_scenario in range(1,5):
         # how to choose previous curve inside?
         curve_old = Curve(100, 0, 3000)
 
-        curve_old.input_curve(curr_time, curr_scenario-1)
+        curve_old.input_curve(curr_time, curr_scenario - 1)
         print(curve_old.segments)
 
         print('################################## ADP training model set up ##################################')

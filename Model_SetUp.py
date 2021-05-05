@@ -80,6 +80,38 @@ class OptModelSetUp():
 
 
 
+    def calculate_pts(self, point_X):
+        #put the soc_sum in, we get the profit
+        point_x_soc = self.x_to_soc(point_X)
+        point_profit = []
+        for s in range(self.lmp.Nlmp_s):
+            p_s = self.lmp.lmp_quantiles[s]
+            for j in self.psh_system.parameter['PSHName']:
+                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
+
+        for k in self.e_system.parameter['EName']:
+            for i in range(self.curve.numbers):
+                bench_num = i
+                point_profit.append(self.curve.point_Y[bench_num] * point_x_soc[bench_num])
+        point_profit_sum = sum(point_profit)
+        return point_profit_sum
+
+    def x_to_soc(self, point_X):
+        #change soc_sum to soc_1 + soc_2 + soc_3
+        turn_1 = point_X // self.curve.steps
+        rest = point_X % self.curve.steps
+        point_x_soc = []
+        for i in range(self.curve.numbers):
+            if turn_1 >  0:
+                point_x_soc.append(self.curve.steps)
+                turn_1 -= 1
+            elif turn_1 == 0:
+                point_x_soc.append(rest)
+                turn_1 -= 1
+            else:
+                point_x_soc.append(0)
+        return point_x_soc
+
 
 
 
@@ -144,32 +176,40 @@ class RLSetUp(OptModelSetUp):
         self.set_up_object()
 
         self.gur_model.setObjective(self.obj, GRB.MAXIMIZE)
+
         self.gur_model.optimize()
 
         # print results for variables
         # for v in self.gur_model.getVars():
         #     print("%s %f" % (v.Varname, v.X))
             # print("%s %f %f" % (v.Varname, v.X, v.Pi))
-        #for optimal solution
+    #deal with optimal solution: store and output
         self.get_optimal()
-        self.output_optimal()
-        ###for curve
+    ###update curve and output curve
         self.get_new_curve()
-        self.output_curve()
+
 
 
     def get_optimal(self):
     #get optimal soc
+        self.get_optimal_soc()
+        self.get_optimal_gen_pump()
+        self.get_optimal_profit()
+        self.output_optimal()
+
+    def get_optimal_soc(self):
         self.optimal_soc = []
-        self.optimal_psh_pump = []
-        self.optimal_psh_gen= []
         _temp = list(self.e_system.parameter['EName'])[0]
         for v in [v for v in self.gur_model.getVars() if (_temp in v.Varname and 'soc' in v.Varname)]:
             soc = v.X
             self.optimal_soc.append(soc)
         self.optimal_soc_sum = sum(self.optimal_soc)
 
+
+    def get_optimal_gen_pump(self):
     #get optimal_psh_gen/pump
+        self.optimal_psh_pump = []
+        self.optimal_psh_gen = []
         for v in [v for v in self.gur_model.getVars() if 'psh_gen_main' in v.Varname]:
             psh = v.X
             self.optimal_psh_gen.append(psh)
@@ -179,8 +219,9 @@ class RLSetUp(OptModelSetUp):
             #psh0.append(-psh)
             self.optimal_psh_pump.append(psh)
         self.optimal_psh_pump_sum = sum(self.optimal_psh_pump)
-        self.output_optimal()
 
+
+    def get_optimal_profit(self):
     #get optimal profit
         self.optimal_profit = self.calculate_pts(self.optimal_soc_sum)
 
@@ -197,12 +238,7 @@ class RLSetUp(OptModelSetUp):
                 st = time + ',' + '%s,%.1f' % (name, self.optimal_e) + '\n'
                 wf.write(st)
 
-    def output_curve(self):
-    #output the curve
-        scenario = self.curr_model_para.scenario
-        filename = self.e_system.e_start_folder + '/Curve_'+ 'time_'+ str(self.curr_model_para.LAC_bhour)+ '_scenario_' +  str(scenario)  + '.csv'
-        df = pd.DataFrame(self.curve.segments, columns =['soc_segment','slope'])
-        df.to_csv(filename, index=False, header=True)
+
 
 
 
@@ -214,6 +250,16 @@ class RLSetUp(OptModelSetUp):
     def get_new_curve(self, alpha = 0.5):
 
         self.alpha = alpha
+        self.get_new_curve_step_1() #基于此次最优解的model
+        self.get_new_curve_step_2_curve_comb() #(1-\alpha)*old_curve + \alpha*old_curve
+        #new curve: self.new_curve_slope
+        self.get_new_curve_step_3_two_pts() #update the new curve with the two new points
+        #new points: self.update_point_1 and self.update_point_2
+        self.curve.curve_update(self.new_curve_slope, self.update_point_1, self.update_point_2)
+        print(self.curve.segments)
+        self.output_curve()
+
+    def get_new_curve_step_1(self):
     #how can we get each new curve_point_X
         self.second_curve_soc = self.curve.point_X
 
@@ -231,53 +277,14 @@ class RLSetUp(OptModelSetUp):
             #change the first back
         self.second_curve_slope[0] = self.second_curve_slope[1]
 
+    def get_new_curve_step_2_curve_comb(self):
     #new curve combine with the old_slope
         self.new_curve_slope = []
         for i in range(len(self.second_curve_soc)):
             _temp = (1 - self.alpha)*self.curve.point_Y[i] + self.alpha*self.second_curve_slope[i]
             self.new_curve_slope.append(_temp) #this is the new slope we need
 
-    #new curve: self.new_curve_slope
-    #update the new curve with the two new points
-        self.get_important_pt()
-        self.curve.curve_update(self.new_curve_slope, self.update_point_1, self.update_point_2)
-        print(self.curve.segments)
-
-
-
-    def calculate_pts(self, point_X):
-        #put the soc_sum in, we get the profit
-        point_x_soc = self.x_to_soc(point_X)
-        point_profit = []
-        for s in range(self.lmp.Nlmp_s):
-            p_s = self.lmp.lmp_quantiles[s]
-            for j in self.psh_system.parameter['PSHName']:
-                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
-
-        for k in self.e_system.parameter['EName']:
-            for i in range(self.curve.numbers):
-                bench_num = i
-                point_profit.append(self.curve.point_Y[bench_num] * point_x_soc[bench_num])
-        point_profit_sum = sum(point_profit)
-        return point_profit_sum
-
-    def x_to_soc(self, point_X):
-        #change soc_sum to soc_1 + soc_2 + soc_3
-        turn_1 = point_X // self.curve.steps
-        rest = point_X % self.curve.steps
-        point_x_soc = []
-        for i in range(self.curve.numbers):
-            if turn_1 >  0:
-                point_x_soc.append(self.curve.steps)
-                turn_1 -= 1
-            elif turn_1 == 0:
-                point_x_soc.append(rest)
-                turn_1 -= 1
-            else:
-                point_x_soc.append(0)
-        return point_x_soc
-
-    def get_important_pt(self):
+    def get_new_curve_step_3_two_pts(self):
         #need find another point #be careful boundary case
     # get second point
     # get second point profit
@@ -311,6 +318,17 @@ class RLSetUp(OptModelSetUp):
             self.update_point_2_y = (self.second_point_profit - self.optimal_profit)/self.curve.steps
         self.update_point_1 = [self.update_point_1_x, self.update_point_1_y]
         self.update_point_2 = [self.update_point_2_x, self.update_point_2_y]
+
+    def output_curve(self):
+    #output the curve
+        scenario = self.curr_model_para.scenario
+        filename = self.e_system.e_start_folder + '/Curve_'+ 'time_'+ str(self.curr_model_para.LAC_bhour)+ '_scenario_' +  str(scenario)  + '.csv'
+        df = pd.DataFrame(self.curve.segments, columns =['soc_segment','slope'])
+        df.to_csv(filename, index=False, header=True)
+
+
+
+
 
 
 

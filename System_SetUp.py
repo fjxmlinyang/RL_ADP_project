@@ -96,7 +96,7 @@ class LMP(System):
             self.filename = self.Input_folder + '/prd_dataframe_wlen_24_'+ self.curr_model.date + '.csv'
         else:
             # filename = Input_folder+'\LMP_Scenarios_' + 'T' + str(LAC_bhour) +'_DA'+ '.csv'
-            if probabilistic:
+            if self.curr_model.probabilistic:
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_50' + '.csv'
             else:
                 self.filename = self.Input_folder + '/prd_dataframe_wlen_'+str(24-self.curr_model.LAC_bhour)+'_'+ self.curr_model.date + '.csv'
@@ -122,7 +122,7 @@ class LMP(System):
                 for i in range(self.Nlmp_s):
                     # probability of each scenario is evenly distributed
                     self.lmp_quantiles.append(1.0 / self.Nlmp_s)
-                    ##only chang here!!!
+                    ##only change here!!!
                     self.lmp_scenarios.append(list(df[Column_name[self.curr_model.scenario]]))
             else:
                 # for deterministic forecast, there is a singel scenario
