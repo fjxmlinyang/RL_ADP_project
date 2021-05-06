@@ -8,7 +8,7 @@ from CurrModelPara import *
 from Curve import *
 
 
-for curr_scenario in range(1,10):
+for curr_scenario in range(1, 2):
     for curr_time in range(24):
         curr_model = CurrModelPara(0, 1, 1, 'March 07 2019', curr_time, curr_scenario)
         #LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
@@ -48,7 +48,7 @@ for curr_scenario in range(1,10):
         ADP_train_model_para = curr_model
 
         ADP_train_system = RLSetUp(psh_system_1, e_system_1, lmp_1, curve_old, ADP_train_model_para, model_1)
-        ADP_train_system.solve_model()
+        ADP_train_system.SPARstorage_model()
 
         # print(ADP_train_system.soc)
         print(ADP_train_system.optimal_soc_sum)
@@ -61,7 +61,7 @@ for curr_scenario in range(1,10):
         # print(ADP_train_system.update_point_2)
 
 
-        print(curve_old.segments)
+        #print(curve_old.segments)
         #
         # print(ADP_train_system.second_point_soc_sum)
         # print(ADP_train_system.second_point_profit)
@@ -74,4 +74,4 @@ for curr_scenario in range(1,10):
         # print(ADP_train_system.new_curve_slope)
         #
         # print(ADP_train_system.curve.segments)
-        ADP_train_system.curve.show_curve()
+        #ADP_train_system.curve.show_curve()

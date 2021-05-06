@@ -16,7 +16,7 @@ class Curve(object):
     
     def seg_initial(self):
         segments = []
-        for i in range(self.lo_bd, self.up_bd+self.steps, self.steps):
+        for i in range(self.lo_bd, self.up_bd + self.steps, self.steps):
             value = (50 - i // self.steps) /10
             segments.append([i, value])
         self.segments = segments
