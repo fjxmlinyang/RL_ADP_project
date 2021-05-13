@@ -28,6 +28,20 @@ class OptModelSetUp():
     def add_var_psh(self, var_name):
         return self.gur_model.addVars(self.psh_system.parameter['PSHName'], ub=float('inf'),lb=-float('inf'),vtype="C",name=var_name)
 
+
+
+    def add_constraint_rolling(self):
+        ## SOC0: e_0=E_start; loop from 0 to 22; e_1=e_0+psh1;....e_23=e_22+psh_23; when loop to 22; directly add e_23=E_end
+        for k in self.e_system.parameter['EName']:
+            print('Estart:', float(self.e_system.parameter['EStart']))
+            LHS = self.e[k] + grb.quicksum(self.psh_gen[j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
+                                          - grb.quicksum(self.psh_pump[j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
+            RHS = self.e_system.parameter['EStart']
+            print(LHS)
+            ###if we calculate the first one, we use 'SOC0', and the last we use 'End'; or we choose the SOC0 to "beginning", at the same time the last we use 'SOC'.
+            self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', k))
+
+
     def add_constraint_epsh(self):
         for j in self.psh_system.parameter['PSHName']:  # all are lists
             self.gur_model.addConstr(self.psh_gen[j] <= self.psh_system.parameter['GenMax'], name='%s_%s' % ('psh_gen_max0', j))
@@ -79,6 +93,24 @@ class OptModelSetUp():
                     bench_num = i
                     self.gur_model.addConstr(self.I[bench_num + 1][k] <= self.I[bench_num][k],
                                     name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
+
+    # def add_contraint_terminal(self):
+    #     for k in self.e_system.parameter['EName']:
+    #         LHS = self.e[k] - self.e_system.parameter['EEnd']
+    #         RHS = (len(e_time_periods) + 1) * self.psh_system.parameter['GenMax'] /self.psh_system.parameter['GenEfficiency']  # PSHmax_g[0] / PSHefficiency[0]
+    #         # RHS = (len(e_time_periods))*PSHmax_p[0]*PSHefficiency[0] #这个是特别的是改过不知道对错的
+    #         # print('e0[k]-Edayend=',  e0[k]-Edayend)
+    #         #print('PSHmax_g is equal ', PSHmax_p[0])
+    #         #print('Upper Bound ', (len(e_time_periods) + 1) * PSHmax_g[0] / PSHefficiency[0])
+    #         self.gur_model.addConstr(LHS <= RHS, name='%s_%s' % ('final_upper', k))
+    #     for k in Ename:
+    #         LHS = self.e[k] - self.e_system.parameter['EEnd']
+    #         RHS = -(len(e_time_periods) + 1) * self.psh_system.parameter['PumpMax']*self.psh_system.parameter['PumpEfficiency'] #PSHmax_p[0] * PSHefficiency[0]
+    #         # RHS = -(len(e_time_periods))*PSHmax_g[0]/PSHefficiency[0] #特别的`
+    #         #print('PSHmax_p is equal ', PSHmax_p[0])
+    #         #print('Lower Bound ', -(len(e_time_periods) + 1) * PSHmax_p[0] * PSHefficiency[0])
+    #         self.gur_model.addConstr(LHS >= RHS, name='%s_%s' % ('final_lower', k))
+
 ##the following is for set upt elements of optimiation problems
     def set_up_variable(self):
     #add gen/pump
@@ -106,7 +138,8 @@ class OptModelSetUp():
         self.gur_model.update()
 
     def set_up_constraint(self):
-
+    # rolling constraint E_start = E_end +pump + gen
+        self.add_constraint_rolling()
     # upper and lower constraint
         self.add_constraint_epsh()
     # curve constraint
@@ -115,6 +148,8 @@ class OptModelSetUp():
         self.add_constraint_soc()
     # constraint for I_1<=I_2<=I_3
         self.add_constraint_I()
+    # terminal constraint
+        #self.add_contraint_terminal()
 
         self.gur_model.update()
 

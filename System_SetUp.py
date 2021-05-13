@@ -99,7 +99,7 @@ class LMP(System):
             if self.curr_model.probabilistic:
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_50' + '.csv'
             else:
-                self.filename = self.Input_folder + '/prd_dataframe_wlen_'+str(24-self.curr_model.LAC_bhour)+'_'+ self.curr_model.date + '.csv'
+                self.filename = self.Input_folder + '/prd_dataframe_wlen_'+ str(24-self.curr_model.LAC_bhour)+'_'+ self.curr_model.date + '.csv'
         
         
         Data = pd.read_csv(self.filename)

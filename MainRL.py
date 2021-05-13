@@ -8,7 +8,7 @@ from CurrModelPara import *
 from Curve import *
 
 
-for curr_scenario in range(1, 2):
+for curr_scenario in range(3, 4):
     for curr_time in range(24):
         curr_model = CurrModelPara(0, 1, 1, 'March 07 2019', curr_time, curr_scenario)
         #LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
@@ -75,3 +75,4 @@ for curr_scenario in range(1, 2):
         #
         # print(ADP_train_system.curve.segments)
         #ADP_train_system.curve.show_curve()
+        print('##############################'+ str(curr_time) +'######################################')
