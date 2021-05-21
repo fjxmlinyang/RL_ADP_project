@@ -17,7 +17,7 @@ class Curve(object):
     def seg_initial(self):
         segments = []
         for i in range(self.lo_bd, self.up_bd + self.steps, self.steps):
-            value = (50 - i // self.steps) #/10
+            value = (50 - i // self.steps) /10
             segments.append([i, value])
         self.segments = segments
     
@@ -34,10 +34,11 @@ class Curve(object):
                 self.segments[i][1] = point_1_y
             elif curr_x >= point_2_x and curr_y >= point_2_y:
                 self.segments[i][1] = point_2_y
+        self.curve_initial()  #需要把point_X and point_Y更新下
         print(self.segments)
 
     def curve_initial(self):
-        df = pd.DataFrame (self.segments, columns=['x','y'])
+        df = pd.DataFrame(self.segments, columns=['x','y'])
         self.curve_df = df
         self.point_X = self.curve_df['x'].to_list()
         self.point_Y = self.curve_df['y'].to_list()
@@ -59,9 +60,11 @@ class Curve(object):
         filename = './Output_Curve' + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
         df = pd.read_csv(filename)
         self.segments = df.values.tolist()
+        self.curve_initial() #!!!别忘了
+        print(self.segments)
 
     def output_initial_curve(self):
-    #output the curve
+    #output the initial curve
         for curr_time in range(24):
             _str = str(curr_time)
             scenario = 0

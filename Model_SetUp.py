@@ -9,13 +9,15 @@ from Curve import *
 
 class OptModelSetUp():
 
-    def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
+    def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model, pre_lmp, pre_curve):
         self.gur_model = gur_model
         self.psh_system = psh_system
         self.e_system = e_system
         self.lmp = lmp
         self.curve = curve
         self.curr_model_para = curr_model_para
+        self.pre_curve = pre_curve
+        self.pre_lmp = pre_lmp
 ########################################
 ########################################
 #funtions for set up
@@ -94,22 +96,20 @@ class OptModelSetUp():
                     self.gur_model.addConstr(self.I[bench_num + 1][k] <= self.I[bench_num][k],
                                     name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
 
-    # def add_contraint_terminal(self):
-    #     for k in self.e_system.parameter['EName']:
-    #         LHS = self.e[k] - self.e_system.parameter['EEnd']
-    #         RHS = (len(e_time_periods) + 1) * self.psh_system.parameter['GenMax'] /self.psh_system.parameter['GenEfficiency']  # PSHmax_g[0] / PSHefficiency[0]
-    #         # RHS = (len(e_time_periods))*PSHmax_p[0]*PSHefficiency[0] #这个是特别的是改过不知道对错的
-    #         # print('e0[k]-Edayend=',  e0[k]-Edayend)
-    #         #print('PSHmax_g is equal ', PSHmax_p[0])
-    #         #print('Upper Bound ', (len(e_time_periods) + 1) * PSHmax_g[0] / PSHefficiency[0])
-    #         self.gur_model.addConstr(LHS <= RHS, name='%s_%s' % ('final_upper', k))
-    #     for k in Ename:
-    #         LHS = self.e[k] - self.e_system.parameter['EEnd']
-    #         RHS = -(len(e_time_periods) + 1) * self.psh_system.parameter['PumpMax']*self.psh_system.parameter['PumpEfficiency'] #PSHmax_p[0] * PSHefficiency[0]
-    #         # RHS = -(len(e_time_periods))*PSHmax_g[0]/PSHefficiency[0] #特别的`
-    #         #print('PSHmax_p is equal ', PSHmax_p[0])
-    #         #print('Lower Bound ', -(len(e_time_periods) + 1) * PSHmax_p[0] * PSHefficiency[0])
-    #         self.gur_model.addConstr(LHS >= RHS, name='%s_%s' % ('final_lower', k))
+    def add_contraint_terminal(self):
+        for k in self.e_system.parameter['EName']:
+            curr_time = 24- self.curr_model_para.LAC_bhour
+            LHS = self.e[k] - self.e_system.parameter['EEnd']
+            RHS = curr_time * self.psh_system.parameter['GenMax'] /self.psh_system.parameter['GenEfficiency'] # PSHmax_g[0] / PSHefficiency[0]
+            # RHS = (len(e_time_periods))*PSHmax_p[0]*PSHefficiency[0] #这个是特别的是改过不知道对错的
+            # print('e0[k]-Edayend=',  e0[k]-Edayend)
+            #print('PSHmax_g is equal ', PSHmax_p[0])
+            #print('Upper Bound ', (len(e_time_periods) + 1) * PSHmax_g[0] / PSHefficiency[0])
+            self.gur_model.addConstr(LHS <= RHS, name='%s_%s' % ('final_upper', k))
+        for k in self.e_system.parameter['EName']:
+            LHS = self.e[k] - self.e_system.parameter['EEnd']
+            RHS = -(curr_time) * self.psh_system.parameter['PumpMax']*self.psh_system.parameter['PumpEfficiency'] #PSHmax_p[0] * PSHefficiency[0]
+            self.gur_model.addConstr(LHS >= RHS, name='%s_%s' % ('final_lower', k))
 
 ##the following is for set upt elements of optimiation problems
     def set_up_variable(self):
@@ -149,7 +149,7 @@ class OptModelSetUp():
     # constraint for I_1<=I_2<=I_3
         self.add_constraint_I()
     # terminal constraint
-        #self.add_contraint_terminal()
+        self.add_contraint_terminal()
 
         self.gur_model.update()
 
@@ -244,16 +244,19 @@ class RLSetUp(OptModelSetUp):
         self.output_optimal()
 
 
-    def get_new_curve_main(self, alpha=0.5):
+    def get_new_curve_main(self, alpha=0.3):
         self.alpha = alpha
         self.get_new_curve_step_1()  # 基于此次最优解的model
+        print(self.curve.segments)
         self.get_new_curve_step_2_curve_comb()  # (1-\alpha)*old_curve + \alpha*old_curve
+
         # new curve: self.new_curve_slope
         self.get_new_curve_step_3_two_pts()  # update the new curve with the two new points
         # new points: self.update_point_1 and self.update_point_2
         self.curve.curve_update(self.new_curve_slope, self.update_point_1, self.update_point_2)
         print(self.curve.segments)
         self.output_curve()
+        self.output_curve_sum()
 
 ##important function
     def SPARstorage_model(self):
@@ -289,13 +292,13 @@ class RLSetUp(OptModelSetUp):
     #get new curve_profit
         self.second_curve_profit = []
         for value in self.second_curve_soc:
-            point_y = self.calculate_pts(value)
+            point_y = self.calculate_pts_previous(value)
             self.second_curve_profit.append(point_y)
 
     #get new curve_slope
         self.second_curve_slope = [0]
         for index in range(1, len(self.second_curve_soc)):
-            temp_slop = (self.second_curve_profit[index]- self.second_curve_profit[index -1])/self.curve.steps
+            temp_slop = (self.second_curve_profit[index] - self.second_curve_profit[index -1])/self.curve.steps
             self.second_curve_slope.append(temp_slop)
             #change the first back
         self.second_curve_slope[0] = self.second_curve_slope[1]
@@ -306,39 +309,73 @@ class RLSetUp(OptModelSetUp):
         for i in range(len(self.second_curve_soc)):
             _temp = (1 - self.alpha)*self.curve.point_Y[i] + self.alpha*self.second_curve_slope[i]
             self.new_curve_slope.append(_temp) #this is the new slope we need
+        print(self.new_curve_slope)
 
     def get_new_curve_step_3_two_pts(self):
         #need find another point #be careful boundary case
     # get second point
     # get second point profit
+    #     if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
+    #         self.second_point_soc_sum = self.optimal_soc_sum - self.curve.steps
+    #         self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
+    #     else:
+    #         self.second_point_soc_sum = self.optimal_soc_sum + self.curve.steps
+    #         self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
+    #
+    # # get previous point profit
+    #     if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
+    #         self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
+    #         self.previous_point_profit = self.calculate_pts(self.second_point_soc_sum)
+    #     else:
+    #         self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
+    #         self.previous_point_profit = self.calculate_pts(self.second_point_soc_sum)
+    # #######shall we get the optimal at previous???
+    #     self.pre_scen_optimal_profit = self.calculate_pts(self.optimal_soc_sum)
+    # #calcuate self.update_point_1/2(point_x, point_curve)
+    #     if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
+    #         #self.optimal_profit and self.optimal_soc_sum
+    #         self.update_point_1_x = self.optimal_soc_sum
+    #         self.update_point_1_y = (self.optimal_profit - self.previous_point_profit) / self.curve.steps
+    #         ##这里写错了，到底是update前面的点，还是这个点？
+    #         self.update_point_2_x = self.optimal_soc_sum
+    #         self.update_point_2_y = (self.optimal_profit - self.previous_point_profit) / self.curve.steps
+    #     else:
+    #         self.update_point_1_x = self.optimal_soc_sum
+    #         self.update_point_1_y = (self.optimal_profit - self.previous_point_profit)/self.curve.steps
+    #         self.update_point_2_x = self.second_point_soc_sum
+    #         self.update_point_2_y = (self.second_point_profit - self.optimal_profit)/self.curve.steps
+    #     self.update_point_1 = [self.update_point_1_x, self.update_point_1_y]
+    #     self.update_point_2 = [self.update_point_2_x, self.update_point_2_y]
+
         if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
             self.second_point_soc_sum = self.optimal_soc_sum - self.curve.steps
-            self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
+            self.second_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
         else:
             self.second_point_soc_sum = self.optimal_soc_sum + self.curve.steps
-            self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
+            self.second_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
 
     # get previous point profit
         if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
-            self.previous_point_soc_sum = self.optimal_soc_sum -  self.curve.steps
-            self.previous_point_profit = self.calculate_pts(self.second_point_soc_sum)
+            self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
+            self.previous_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
         else:
             self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
-            self.previous_point_profit = self.calculate_pts(self.second_point_soc_sum)
-
+            self.previous_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
+    #######shall we get the optimal at previous???
+        self.pre_scen_optimal_profit = self.calculate_pts_previous(self.optimal_soc_sum)
     #calcuate self.update_point_1/2(point_x, point_curve)
         if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
             #self.optimal_profit and self.optimal_soc_sum
-            #need check?
             self.update_point_1_x = self.optimal_soc_sum
-            self.update_point_1_y = (self.optimal_profit - self.previous_point_profit) / self.curve.steps
-            self.update_point_2_x = self.optimal_profit
-            self.update_point_2_y = (self.optimal_profit - self.previous_point_profit) / self.curve.steps
+            self.update_point_1_y = (self.pre_scen_optimal_profit - self.previous_point_profit) / self.curve.steps
+            ##这里写错了，到底是update前面的点，还是这个点？
+            self.update_point_2_x = self.optimal_soc_sum
+            self.update_point_2_y = (self.pre_scen_optimal_profit - self.previous_point_profit) / self.curve.steps
         else:
             self.update_point_1_x = self.optimal_soc_sum
-            self.update_point_1_y = (self.optimal_profit - self.previous_point_profit)/self.curve.steps
+            self.update_point_1_y = (self.pre_scen_optimal_profit - self.previous_point_profit)/self.curve.steps
             self.update_point_2_x = self.second_point_soc_sum
-            self.update_point_2_y = (self.second_point_profit - self.optimal_profit)/self.curve.steps
+            self.update_point_2_y = (self.second_point_profit - self.pre_scen_optimal_profit)/self.curve.steps
         self.update_point_1 = [self.update_point_1_x, self.update_point_1_y]
         self.update_point_2 = [self.update_point_2_x, self.update_point_2_y]
 
@@ -347,6 +384,28 @@ class RLSetUp(OptModelSetUp):
         scenario = self.curr_model_para.scenario
         filename = self.e_system.e_start_folder + '/Curve_'+ 'time_'+ str(self.curr_model_para.LAC_bhour)+ '_scenario_' +  str(scenario)  + '.csv'
         df = pd.DataFrame(self.curve.segments, columns =['soc_segment','slope'])
+        df.to_csv(filename, index=False, header=True)
+
+
+    def output_curve_sum(self):
+        #input the original
+        curr_time = self.curr_model_para.LAC_bhour
+        scenario = self.curr_model_para.scenario
+
+        if scenario == 1:
+            filename = self.e_system.e_start_folder  + '/Curve_' + 'time_' + str(curr_time) + '_scenario_' + str(scenario) + '.csv'
+            df = pd.read_csv(filename)
+        else:
+            filename = self.e_system.e_start_folder + '/Curve_total_' + 'time_' + str(self.curr_model_para.LAC_bhour) + '.csv'
+            df = pd.read_csv(filename)
+        #output the current
+
+
+        #df_cur = pd.DataFrame(self.curve.segments, columns=['soc_segment', 'slope_time_' + str(curr_time) + str(scenario)])
+        df_cur = pd.DataFrame(self.curve.point_Y, columns=[ 'slope_time_' + str(curr_time) + str(scenario)])
+        df = pd.concat([df, df_cur], axis = 1)
+
+        filename = self.e_system.e_start_folder + '/Curve_total_' + 'time_' + str(self.curr_model_para.LAC_bhour)+'.csv'
         df.to_csv(filename, index=False, header=True)
 
 
@@ -363,6 +422,23 @@ class RLSetUp(OptModelSetUp):
             for i in range(self.curve.numbers):
                 bench_num = i
                 point_profit.append(self.curve.point_Y[bench_num] * point_x_soc[bench_num])
+        point_profit_sum = sum(point_profit)
+        return point_profit_sum
+
+    def calculate_pts_previous(self, point_X):
+        #用同样的F，不同的curve-----pre_curve，不同的lmp-----pre-lmp
+        point_x_soc = self.x_to_soc(point_X)
+        point_profit = []
+
+        for s in range(self.pre_lmp.Nlmp_s):
+            p_s = self.pre_lmp.lmp_quantiles[s]
+            for j in self.psh_system.parameter['PSHName']:
+                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.pre_lmp.lmp_scenarios[s][0] * p_s)
+
+        for k in self.e_system.parameter['EName']:
+            for i in range(self.pre_curve.numbers):
+                bench_num = i
+                point_profit.append(self.pre_curve.point_Y[bench_num] * point_x_soc[bench_num])
         point_profit_sum = sum(point_profit)
         return point_profit_sum
 

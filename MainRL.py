@@ -8,7 +8,10 @@ from CurrModelPara import *
 from Curve import *
 
 
-for curr_scenario in range(3, 4):
+
+for curr_scenario in range(1,50):
+    PSH_Results = []
+    SOC_Results = []
     for curr_time in range(24):
         curr_model = CurrModelPara(0, 1, 1, 'March 07 2019', curr_time, curr_scenario)
         #LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
@@ -46,8 +49,24 @@ for curr_scenario in range(3, 4):
         print(e_system_1.parameter['EName'])
         model_1 = Model('DAMarket')
         ADP_train_model_para = curr_model
+        ###input prev_lmp and curve
+        if curr_time != 23:
+        ##lmp, time =t+1, scenario= n
+            prev_model = CurrModelPara(0, 1, 1, 'March 07 2019', curr_time + 1 , curr_scenario)
+            prev_lmp = LMP(prev_model)
+            prev_lmp.set_up_parameter()
+        ##curve, time =t+1, scenario= n-1
+            pre_curve = Curve(100, 0, 3000)
+            pre_curve.input_curve(curr_time +1, curr_scenario - 1)
+        elif curr_time == 23:
+            prev_model = CurrModelPara(0, 1, 1, 'March 07 2019', curr_time , curr_scenario)
+            prev_lmp = LMP(prev_model)
+            prev_lmp.set_up_parameter()
 
-        ADP_train_system = RLSetUp(psh_system_1, e_system_1, lmp_1, curve_old, ADP_train_model_para, model_1)
+            pre_curve = Curve(100, 0, 3000)
+            pre_curve.input_curve(curr_time , curr_scenario - 1)
+        ######
+        ADP_train_system = RLSetUp(psh_system_1, e_system_1, lmp_1, curve_old, ADP_train_model_para, model_1, prev_lmp, pre_curve)
         ADP_train_system.SPARstorage_model()
 
         # print(ADP_train_system.soc)
@@ -76,3 +95,30 @@ for curr_scenario in range(3, 4):
         # print(ADP_train_system.curve.segments)
         #ADP_train_system.curve.show_curve()
         print('##############################'+ str(curr_time) +'######################################')
+
+        SOC_Results.append(ADP_train_system.optimal_soc_sum)
+        if ADP_train_system.optimal_psh_gen_sum > 1:
+            PSH_Results.append(ADP_train_system.optimal_psh_gen_sum)
+        else:
+            PSH_Results.append(-ADP_train_system.optimal_psh_pump_sum)
+
+
+# add the last one
+
+    filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(curr_scenario) +'_'+curr_model.date + '.csv'
+    PSH_Results.append((SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['GenEfficiency'][0])
+    SOC_Results.append(e_system_1.parameter['EEnd'][0])
+
+    df = pd.DataFrame({'SOC_Results_'+str(curr_scenario): SOC_Results, 'PSH_Results_'+ str(curr_scenario): PSH_Results})
+    #df = pd.DataFrame({'PSH_Results_' + str(curr_scenario): PSH_Results})
+    #df.to_csv(filename)
+    if curr_scenario == 1:
+        df_total = df
+    else:
+        df_total = pd.concat([df_total, df], axis = 1)
+
+
+
+
+filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' +'_'+ curr_model.date + '.csv'
+df_total.to_csv(filename)

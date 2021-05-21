@@ -125,7 +125,7 @@ class LMP(System):
                     ##only change here!!!
                     self.lmp_scenarios.append(list(df[Column_name[self.curr_model.scenario]]))
             else:
-                # for deterministic forecast, there is a singel scenario
+                # for deterministic forecast, there is a single scenario
                 self.Nlmp_s = 1
                 self.lmp_quantiles.append(1.0 / self.Nlmp_s)
                 # deterministic forecast is the single point prediction
