@@ -39,7 +39,7 @@ for curr_scenario in range(1,50):
 
         print('################################## curve set up ##################################')
         # how to choose previous curve inside?
-        curve_old = Curve(100, 0, 3000)
+        curve_old = Curve(30, 0, 3000)
 
         curve_old.input_curve(curr_time, curr_scenario - 1)
         print(curve_old.segments)
@@ -56,14 +56,14 @@ for curr_scenario in range(1,50):
             prev_lmp = LMP(prev_model)
             prev_lmp.set_up_parameter()
         ##curve, time =t+1, scenario= n-1
-            pre_curve = Curve(100, 0, 3000)
+            pre_curve = Curve(30, 0, 3000)
             pre_curve.input_curve(curr_time +1, curr_scenario - 1)
         elif curr_time == 23:
             prev_model = CurrModelPara(0, 1, 1, 'March 07 2019', curr_time , curr_scenario)
             prev_lmp = LMP(prev_model)
             prev_lmp.set_up_parameter()
 
-            pre_curve = Curve(100, 0, 3000)
+            pre_curve = Curve(30, 0, 3000)
             pre_curve.input_curve(curr_time , curr_scenario - 1)
         ######
         ADP_train_system = RLSetUp(psh_system_1, e_system_1, lmp_1, curve_old, ADP_train_model_para, model_1, prev_lmp, pre_curve)
@@ -109,8 +109,8 @@ for curr_scenario in range(1,50):
     PSH_Results.append((SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['GenEfficiency'][0])
     SOC_Results.append(e_system_1.parameter['EEnd'][0])
 
-    df = pd.DataFrame({'SOC_Results_'+str(curr_scenario): SOC_Results, 'PSH_Results_'+ str(curr_scenario): PSH_Results})
-    #df = pd.DataFrame({'PSH_Results_' + str(curr_scenario): PSH_Results})
+    #df = pd.DataFrame({'SOC_Results_'+str(curr_scenario): SOC_Results, 'PSH_Results_'+ str(curr_scenario): PSH_Results})
+    df = pd.DataFrame({'PSH_Results_' + str(curr_scenario): PSH_Results})
     #df.to_csv(filename)
     if curr_scenario == 1:
         df_total = df

@@ -100,7 +100,7 @@ class OptModelSetUp():
         for k in self.e_system.parameter['EName']:
             curr_time = 24- self.curr_model_para.LAC_bhour
             LHS = self.e[k] - self.e_system.parameter['EEnd']
-            RHS = curr_time * self.psh_system.parameter['GenMax'] /self.psh_system.parameter['GenEfficiency'] # PSHmax_g[0] / PSHefficiency[0]
+            RHS = (curr_time + 5) * self.psh_system.parameter['GenMax'] /self.psh_system.parameter['GenEfficiency'] # PSHmax_g[0] / PSHefficiency[0]
             # RHS = (len(e_time_periods))*PSHmax_p[0]*PSHefficiency[0] #这个是特别的是改过不知道对错的
             # print('e0[k]-Edayend=',  e0[k]-Edayend)
             #print('PSHmax_g is equal ', PSHmax_p[0])
@@ -108,7 +108,7 @@ class OptModelSetUp():
             self.gur_model.addConstr(LHS <= RHS, name='%s_%s' % ('final_upper', k))
         for k in self.e_system.parameter['EName']:
             LHS = self.e[k] - self.e_system.parameter['EEnd']
-            RHS = -(curr_time) * self.psh_system.parameter['PumpMax']*self.psh_system.parameter['PumpEfficiency'] #PSHmax_p[0] * PSHefficiency[0]
+            RHS = -(curr_time + 5) * self.psh_system.parameter['PumpMax']*self.psh_system.parameter['PumpEfficiency'] #PSHmax_p[0] * PSHefficiency[0]
             self.gur_model.addConstr(LHS >= RHS, name='%s_%s' % ('final_lower', k))
 
 ##the following is for set upt elements of optimiation problems
@@ -244,7 +244,7 @@ class RLSetUp(OptModelSetUp):
         self.output_optimal()
 
 
-    def get_new_curve_main(self, alpha=0.3):
+    def get_new_curve_main(self, alpha=0.001):
         self.alpha = alpha
         self.get_new_curve_step_1()  # 基于此次最优解的model
         print(self.curve.segments)
@@ -360,7 +360,7 @@ class RLSetUp(OptModelSetUp):
             self.previous_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
         else:
             self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
-            self.previous_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
+            self.previous_point_profit = self.calculate_pts_previous(self.previous_point_soc_sum)
     #######shall we get the optimal at previous???
         self.pre_scen_optimal_profit = self.calculate_pts_previous(self.optimal_soc_sum)
     #calcuate self.update_point_1/2(point_x, point_curve)
