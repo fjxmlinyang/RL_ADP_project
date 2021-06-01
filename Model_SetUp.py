@@ -72,18 +72,18 @@ class OptModelSetUp():
                 name_num = str(i + 1)
                 bench_num = i
                 if bench_num == 0:
-                    self.gur_model.addConstr(self.soc[bench_num][k] <= str(self.d[bench_num]) * self.I[bench_num][k],
+                    self.gur_model.addConstr(self.soc[bench_num][k] <= float(self.d[bench_num]) * self.I[bench_num][k],
                                     name='%s_%s' % ('soc_' + name_num + '_max', k))
-                    self.gur_model.addConstr(str(self.d[bench_num]) * self.I[bench_num + 1][k] <= self.soc[bench_num][k],
+                    self.gur_model.addConstr(float(self.d[bench_num]) * self.I[bench_num + 1][k] <= self.soc[bench_num][k],
                                     name='%s_%s' % ('soc_' + name_num + '_min', k))
                 elif bench_num == self.curve.numbers - 1:
-                    self.gur_model.addConstr(self.soc[bench_num][k] <= str(self.d[bench_num]) * self.I[bench_num][k],
+                    self.gur_model.addConstr(self.soc[bench_num][k] <= float(self.d[bench_num]) * self.I[bench_num][k],
                                     name='%s_%s' % ('soc_' + name_num + '_max', k))
                     self.gur_model.addConstr(0 <= self.soc[bench_num][k], name='%s_%s' % ('soc_' + name_num + '_min', k))
                 else:
-                    self.gur_model.addConstr(self.soc[bench_num][k] <= str(self.d[bench_num]) * self.I[bench_num][k],
+                    self.gur_model.addConstr(self.soc[bench_num][k] <= float(self.d[bench_num]) * self.I[bench_num][k],
                                     name='%s_%s' % ('soc_' + name_num + '_max', k))
-                    self.gur_model.addConstr(str(self.d[bench_num]) * self.I[bench_num + 1][k] <= self.soc[bench_num][k],
+                    self.gur_model.addConstr(float(self.d[bench_num]) * self.I[bench_num + 1][k] <= self.soc[bench_num][k],
                                     name='%s_%s' % ('soc_' + name_num + '_min', k))
 
     def add_constraint_I(self):
@@ -97,19 +97,17 @@ class OptModelSetUp():
                                     name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
 
     def add_contraint_terminal(self):
+        beta = 0.001
         for k in self.e_system.parameter['EName']:
-            curr_time = 24- self.curr_model_para.LAC_bhour
-            LHS = self.e[k] - self.e_system.parameter['EEnd']
-            RHS = (curr_time + 5) * self.psh_system.parameter['GenMax'] /self.psh_system.parameter['GenEfficiency'] # PSHmax_g[0] / PSHefficiency[0]
-            # RHS = (len(e_time_periods))*PSHmax_p[0]*PSHefficiency[0] #这个是特别的是改过不知道对错的
-            # print('e0[k]-Edayend=',  e0[k]-Edayend)
-            #print('PSHmax_g is equal ', PSHmax_p[0])
-            #print('Upper Bound ', (len(e_time_periods) + 1) * PSHmax_g[0] / PSHefficiency[0])
-            self.gur_model.addConstr(LHS <= RHS, name='%s_%s' % ('final_upper', k))
+            curr_time = 23 - self.curr_model_para.LAC_bhour
+            LHS_1 = self.e[k] - self.e_system.parameter['EEnd']
+            RHS_1 = (curr_time   ) * self.psh_system.parameter['GenMax'] /(self.psh_system.parameter['GenEfficiency']+beta) # PSHmax_g[0] / PSHefficiency[0]
+            self.gur_model.addConstr(LHS_1 <= RHS_1, name='%s_%s' % ('final_upper', k))
         for k in self.e_system.parameter['EName']:
-            LHS = self.e[k] - self.e_system.parameter['EEnd']
-            RHS = -(curr_time + 5) * self.psh_system.parameter['PumpMax']*self.psh_system.parameter['PumpEfficiency'] #PSHmax_p[0] * PSHefficiency[0]
-            self.gur_model.addConstr(LHS >= RHS, name='%s_%s' % ('final_lower', k))
+            curr_time = 23 - self.curr_model_para.LAC_bhour
+            LHS_2 = self.e[k] - self.e_system.parameter['EEnd']
+            RHS_2 = -(curr_time  ) * self.psh_system.parameter['PumpMax'] * (self.psh_system.parameter['PumpEfficiency']- beta) #PSHmax_p[0] * PSHefficiency[0]
+            self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
 
 ##the following is for set upt elements of optimiation problems
     def set_up_variable(self):
@@ -144,7 +142,7 @@ class OptModelSetUp():
         self.add_constraint_epsh()
     # curve constraint
         self.add_constraint_curve()
-    # constraint for  d_1I_2 <= soc_1 <=d_1I_1?
+    # constraint for  d_1I_2 <= soc_1 <=d_1I_1?##
         self.add_constraint_soc()
     # constraint for I_1<=I_2<=I_3
         self.add_constraint_I()
@@ -155,13 +153,15 @@ class OptModelSetUp():
 
     def set_up_object(self):
         self.profit_max = []
-        for s in range(self.lmp.Nlmp_s):
-            p_s = self.lmp.lmp_quantiles[s]
-            for j in self.psh_system.parameter['PSHName']:
-                a = self.lmp.lmp_scenarios[s][0] * p_s *50
-                print(a)
-                self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[s][0] * p_s)
-
+        # for s in range(self.lmp.Nlmp_s):
+        #     p_s = self.lmp.lmp_quantiles[s]
+        #     for j in self.psh_system.parameter['PSHName']:
+        #         a = self.lmp.lmp_scenarios[s][0] * p_s * self.lmp.Nlmp_s
+        #         print(a)
+        #         #这里只取了第一个
+        #         self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[s][0] * p_s)
+        for j in self.psh_system.parameter['PSHName']:
+            self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
                 bench_num = i
@@ -230,6 +230,7 @@ class RLSetUp(OptModelSetUp):
 
     def solve_model_main(self):
         self.gur_model.setObjective(self.obj, GRB.MAXIMIZE)
+        self.gur_model.setParam("MIPGap", 0.0001)
         self.gur_model.optimize()
         # print results for variables
         # for v in self.gur_model.getVars():
@@ -244,7 +245,7 @@ class RLSetUp(OptModelSetUp):
         self.output_optimal()
 
 
-    def get_new_curve_main(self, alpha=0.001):
+    def get_new_curve_main(self, alpha=0.2):
         self.alpha = alpha
         self.get_new_curve_step_1()  # 基于此次最优解的model
         print(self.curve.segments)
@@ -257,6 +258,7 @@ class RLSetUp(OptModelSetUp):
         print(self.curve.segments)
         self.output_curve()
         self.output_curve_sum()
+        #self.output_soc_psh()
 
 ##important function
     def SPARstorage_model(self):
@@ -313,46 +315,16 @@ class RLSetUp(OptModelSetUp):
 
     def get_new_curve_step_3_two_pts(self):
         #need find another point #be careful boundary case
+
     # get second point
     # get second point profit
-    #     if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
-    #         self.second_point_soc_sum = self.optimal_soc_sum - self.curve.steps
-    #         self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
-    #     else:
-    #         self.second_point_soc_sum = self.optimal_soc_sum + self.curve.steps
-    #         self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
-    #
-    # # get previous point profit
-    #     if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
-    #         self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
-    #         self.previous_point_profit = self.calculate_pts(self.second_point_soc_sum)
-    #     else:
-    #         self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
-    #         self.previous_point_profit = self.calculate_pts(self.second_point_soc_sum)
-    # #######shall we get the optimal at previous???
-    #     self.pre_scen_optimal_profit = self.calculate_pts(self.optimal_soc_sum)
-    # #calcuate self.update_point_1/2(point_x, point_curve)
-    #     if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
-    #         #self.optimal_profit and self.optimal_soc_sum
-    #         self.update_point_1_x = self.optimal_soc_sum
-    #         self.update_point_1_y = (self.optimal_profit - self.previous_point_profit) / self.curve.steps
-    #         ##这里写错了，到底是update前面的点，还是这个点？
-    #         self.update_point_2_x = self.optimal_soc_sum
-    #         self.update_point_2_y = (self.optimal_profit - self.previous_point_profit) / self.curve.steps
-    #     else:
-    #         self.update_point_1_x = self.optimal_soc_sum
-    #         self.update_point_1_y = (self.optimal_profit - self.previous_point_profit)/self.curve.steps
-    #         self.update_point_2_x = self.second_point_soc_sum
-    #         self.update_point_2_y = (self.second_point_profit - self.optimal_profit)/self.curve.steps
-    #     self.update_point_1 = [self.update_point_1_x, self.update_point_1_y]
-    #     self.update_point_2 = [self.update_point_2_x, self.update_point_2_y]
-
         if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
             self.second_point_soc_sum = self.optimal_soc_sum - self.curve.steps
             self.second_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
         else:
             self.second_point_soc_sum = self.optimal_soc_sum + self.curve.steps
             self.second_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
+            #self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
 
     # get previous point profit
         if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
@@ -361,8 +333,10 @@ class RLSetUp(OptModelSetUp):
         else:
             self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
             self.previous_point_profit = self.calculate_pts_previous(self.previous_point_soc_sum)
+            #self.previous_point_profit = self.calculate_pts(self.previous_point_soc_sum)
     #######shall we get the optimal at previous???
         self.pre_scen_optimal_profit = self.calculate_pts_previous(self.optimal_soc_sum)
+        #self.pre_scen_optimal_profit = self.calculate_pts(self.optimal_soc_sum)
     #calcuate self.update_point_1/2(point_x, point_curve)
         if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
             #self.optimal_profit and self.optimal_soc_sum
@@ -417,13 +391,18 @@ class RLSetUp(OptModelSetUp):
             p_s = self.lmp.lmp_quantiles[s]
             for j in self.psh_system.parameter['PSHName']:
                 point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
+        # for j in self.psh_system.parameter['PSHName']:
+        #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
 
+        self.curr_cost = sum(point_profit)
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
                 bench_num = i
                 point_profit.append(self.curve.point_Y[bench_num] * point_x_soc[bench_num])
         point_profit_sum = sum(point_profit)
         return point_profit_sum
+
+
 
     def calculate_pts_previous(self, point_X):
         #用同样的F，不同的curve-----pre_curve，不同的lmp-----pre-lmp
@@ -434,6 +413,8 @@ class RLSetUp(OptModelSetUp):
             p_s = self.pre_lmp.lmp_quantiles[s]
             for j in self.psh_system.parameter['PSHName']:
                 point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.pre_lmp.lmp_scenarios[s][0] * p_s)
+        # for j in self.psh_system.parameter['PSHName']:
+        #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
 
         for k in self.e_system.parameter['EName']:
             for i in range(self.pre_curve.numbers):
@@ -441,6 +422,7 @@ class RLSetUp(OptModelSetUp):
                 point_profit.append(self.pre_curve.point_Y[bench_num] * point_x_soc[bench_num])
         point_profit_sum = sum(point_profit)
         return point_profit_sum
+
 
     def x_to_soc(self, point_X):
         #change soc_sum to soc_1 + soc_2 + soc_3
@@ -464,6 +446,7 @@ class RLSetUp(OptModelSetUp):
 
 
 
+    #def output_soc_psh(self):
 
 
 
@@ -475,39 +458,3 @@ class RLSetUp(OptModelSetUp):
 
 
 
-
-# print(e_system_1.parameter['EName'])
-# model_1 = Model('DAMarket')
-# ADP_train_model_para = CurrModelPara(1, 0, 1, 'March 07 2019', 1)
-#
-# ADP_train_system = RLSetUp(psh_system_1, e_system_1, lmp_1, curve_1, ADP_train_model_para, model_1)
-# ADP_train_system.set_up_variable()
-# ADP_train_system.set_up_constraint()
-# ADP_train_system.set_up_object()
-# ADP_train_system.solve_model()
-# print(ADP_train_system.soc)
-
-
-
-
-# test for x_to_soc
-# def x_to_soc(point_X):
-#     numbers = 100
-#     steps = 30
-#     turn_1 = point_X // steps
-#     rest = point_X % steps
-#     point_x_soc = []
-#     for i in range(numbers):
-#         if turn_1 >  0:
-#             point_x_soc.append(steps)
-#             turn_1 -= 1
-#         elif turn_1 == 0:
-#             point_x_soc.append(rest)
-#             turn_1 -= 1
-#         else:
-#             point_x_soc.append(0)
-#     return point_x_soc
-#
-# point_x_soc = x_to_soc(157)
-# print(point_x_soc)
-# print(len(point_x_soc))

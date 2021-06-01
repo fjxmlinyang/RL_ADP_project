@@ -10,15 +10,22 @@ class Curve(object):
         self.up_bd = up_bd
         self.lo_bd = lo_bd
         self.steps = (up_bd-lo_bd) // numbers
+        self.filename_all = './Output_Curve'
         self.seg_initial()
         self.curve_initial()
         self.output_initial_curve()
+
     
     def seg_initial(self):
         segments = []
         for i in range(self.lo_bd, self.up_bd + self.steps, self.steps):
-            #value = (50 - i // self.steps) /10
-            value = (100 - 2*i // self.steps)
+            curr_step = i // self.steps
+            if i == self.lo_bd:
+                value = 200
+            else:
+                #value = (50 - i // self.steps) #/10
+                value = 50 - curr_step *0.4
+            #value = (100 - 2*i // self.steps)
             segments.append([i, value])
         self.segments = segments
     
@@ -58,7 +65,7 @@ class Curve(object):
 
     def input_curve(self, time , scenario ):
         _str = str(time)
-        filename = './Output_Curve' + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
+        filename =  self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
         df = pd.read_csv(filename)
         self.segments = df.values.tolist()
         self.curve_initial() #!!!别忘了
@@ -69,16 +76,16 @@ class Curve(object):
         for curr_time in range(24):
             _str = str(curr_time)
             scenario = 0
-            filename = './Output_Curve' + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
+            filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
             df = pd.DataFrame(self.segments, columns =['soc_segment','slope'])
             df.to_csv(filename, index=False, header=True)
 
 
-curve_1 = Curve(100, 0, 3000)
-
-print(curve_1.segments)
-#curve_1.input_curve()
-print(curve_1.segments)
+# curve_1 = Curve(100, 0, 3000)
+#
+# print(curve_1.segments)
+# #curve_1.input_curve()
+# print(curve_1.segments)
 
 #curve_1.seg_update([50,100],[105,50])
 #print(curve_1.segments)

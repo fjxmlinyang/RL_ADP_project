@@ -28,6 +28,7 @@ class System():
         self.Input_folder = None
         self.Output_folder = None
         self.parameter = {}
+        self.Input_all_total = './Input_Curve'
 
     def input_parameter(self, paranameter_name, in_model_name):
         Data = pd.read_csv(self.filename)
@@ -41,7 +42,7 @@ class PshSystem(System):
 
     def set_up_parameter(self):
 ##这个是给标量 #how to input one by one?
-        self.Input_folder_parent = './Input_Curve/PSH-Rolling Window'
+        self.Input_folder_parent = self.Input_all_total + '/PSH-Rolling Window'
         self.Input_folder = self.Input_folder_parent +'/'+ self.curr_model.date
         self.filename = self.Input_folder +'/PSH.csv'
         self.input_parameter('GenMin', 'GenMin')
@@ -63,7 +64,7 @@ class ESystem(System):
 
     def set_up_parameter(self):
 ##这个是给标量 #how to input one by one?
-        self.Input_folder_parent = './Input_Curve/PSH-Rolling Window'
+        self.Input_folder_parent = self.Input_all_total + '/PSH-Rolling Window'
         self.Input_folder = self.Input_folder_parent +'/'+ self.curr_model.date 
         self.filename = self.Input_folder +  '/Reservoir.csv'
         self.input_parameter('Min', 'EMin')
@@ -73,8 +74,12 @@ class ESystem(System):
 
         self.Output_folder='./Output_Curve'
         #here are for rolling model
-        if self.curr_model.LAC_bhour == 0 or self.curr_model.LAC_last_windows:
+        if self.curr_model.LAC_bhour == 0:
             self.input_parameter('Start', 'EStart')
+            self.e_start_folder = self.Output_folder
+        elif self.curr_model.LAC_last_windows:
+            self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour - 1) + '.csv'
+            self.input_parameter('SOC', 'EStart')
             self.e_start_folder = self.Output_folder
         else:
             self.filename = self.Output_folder+'/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour-1) + '.csv'
@@ -89,14 +94,16 @@ class ESystem(System):
 class LMP(System):
 
     def set_up_parameter(self):
-        self.Input_folder_parent = './Input_Curve/PSH-Rolling Window'
+        self.Input_folder_parent = self.Input_all_total + '/PSH-Rolling Window'
         self.Input_folder = self.Input_folder_parent+'/'+ self.curr_model.date
         if self.curr_model.LAC_last_windows:
             # filename = Input_folder + '\LMP_Hindsight' + '.csv'
             self.filename = self.Input_folder + '/prd_dataframe_wlen_24_'+ self.curr_model.date + '.csv'
         else:
             # filename = Input_folder+'\LMP_Scenarios_' + 'T' + str(LAC_bhour) +'_DA'+ '.csv'
-            if self.curr_model.probabilistic:
+            if self.curr_model.probabilistic and self.Input_all_total == './Input_bootstrap':
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_550' + '.csv'
+            elif self.curr_model.probabilistic and self.Input_all_total != './Input_bootstrap':
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_50' + '.csv'
             else:
                 self.filename = self.Input_folder + '/prd_dataframe_wlen_'+ str(24-self.curr_model.LAC_bhour)+'_'+ self.curr_model.date + '.csv'
