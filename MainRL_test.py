@@ -8,13 +8,17 @@ from CurrModelPara import *
 from Curve import *
 from Main_cal_opt import find_optimal_value
 
-#date = 'March 07 2019'
+
+###for this one, we only test for the after fact data
+
+
+date = 'March 07 2019'
 #date = 'April 01 2019'
 #date = 'April 15 2019'
-date = 'April 22 2019'
+#date = 'April 22 2019'
 
 start = 1
-end = 200
+end = 500
 Curr_Scenario_Cost_Total = []
 for curr_scenario in range(start, end):
     PSH_Results = []
@@ -23,7 +27,7 @@ for curr_scenario in range(start, end):
 
     for curr_time in range(23):
 
-        curr_model = CurrModelPara(0, 1, 1,  date , curr_time, curr_scenario)
+        curr_model = CurrModelPara(1 , 1, 0,  date, curr_time, curr_scenario)
         #LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
         print('################################## psh_system set up ##################################')
         psh_model_1 = curr_model
@@ -95,38 +99,37 @@ for curr_scenario in range(start, end):
         curr_scenario_cost_total += ADP_train_system.curr_cost
         print(curr_scenario_cost_total)
 
-
     # add the last one
 
-    filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(curr_scenario) +'_'+ curr_model.date + '.csv'
-    if SOC_Results[-1] - e_system_1.parameter['EEnd'][0]> 0.1:
-        PSH_Results.append((SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) * psh_system_1.parameter['GenEfficiency'][0])
+    filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(
+        curr_scenario) + '_' + curr_model.date + '.csv'
+    if SOC_Results[-1] - e_system_1.parameter['EEnd'][0] > 0.1:
+        PSH_Results.append(
+            (SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) * psh_system_1.parameter['GenEfficiency'][0])
     else:
-        PSH_Results.append((SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['PumpEfficiency'][0])
+        PSH_Results.append(
+            (SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['PumpEfficiency'][0])
 
     SOC_Results.append(e_system_1.parameter['EEnd'][0])
 
-    df = pd.DataFrame({'SOC_Results_'+ str(curr_scenario): SOC_Results, 'PSH_Results_'+ str(curr_scenario): PSH_Results})
-    #df = pd.DataFrame({'PSH_Results_' + str(curr_scenario): PSH_Results})
-    #df.to_csv(filename)
+    df = pd.DataFrame(
+        {'SOC_Results_' + str(curr_scenario): SOC_Results, 'PSH_Results_' + str(curr_scenario): PSH_Results})
+    # df = pd.DataFrame({'PSH_Results_' + str(curr_scenario): PSH_Results})
+    # df.to_csv(filename)
     if curr_scenario == start:
         df_total = df
     else:
-        df_total = pd.concat([df_total, df], axis = 1)
+        df_total = pd.concat([df_total, df], axis=1)
 
     ##calculate total cost
     Curr_Scenario_Cost_Total.append(curr_scenario_cost_total)
 
-
-
-
-
 #output the psh and soc
-filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' +'_'+ curr_model.date + '.csv'
+filename = './Output_Curve' + '/test_PSH_Profitmax_Rolling_Results_' + 'total' +'_'+ curr_model.date + '.csv'
 df_total.to_csv(filename)
 
 #output curr_cost
-filename = './Output_Curve' + '/Current_Cost_Total_Results_' + str(curr_scenario) + '_' + curr_model.date + '.csv'
+filename = './Output_Curve' + '/test_Current_Cost_Total_Results_' + str(curr_scenario) + '_' + curr_model.date + '.csv'
 df = pd.DataFrame({'Curr_Scenario_Cost_Total': Curr_Scenario_Cost_Total})
 df.to_csv(filename)
 
