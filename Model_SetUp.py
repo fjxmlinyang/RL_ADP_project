@@ -123,6 +123,7 @@ class OptModelSetUp():
         self.soc = []
         self.I = []
         for i in range(self.curve.numbers):
+        #for i in range(self.curve.numbers ):
             name_num = str(i + 1)
             self.soc.append(self.add_var_e('soc_' + name_num))
             self.I.append(self.add_var_I('I_' + name_num))
@@ -130,6 +131,7 @@ class OptModelSetUp():
     #add d
         d = []
         for i in range(self.curve.numbers):
+        #for i in range(self.curve.numbers ):
             d.append(self.curve.point_X[i+1] - self.curve.point_X[i])
         self.d = d
 
@@ -165,7 +167,9 @@ class OptModelSetUp():
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
                 bench_num = i
-                self.profit_max.append(self.curve.point_Y[bench_num] * self.soc[bench_num][k])
+                #self.profit_max.append(self.curve.point_Y[bench_num] * self.soc[bench_num][k])
+                #curve如果是[soc=0, slope=10],[soc=30,slope=20], 从0-30,slope为30
+                self.profit_max.append(self.curve.point_Y[bench_num + 1] * self.soc[bench_num ][k])
         print(self.profit_max)
         self.obj = quicksum(self.profit_max)
 
@@ -249,7 +253,7 @@ class RLSetUp(OptModelSetUp):
         self.alpha = alpha
         self.get_new_curve_step_1()  # 基于此次最优解的model
         print(self.curve.segments)
-        self.get_new_curve_step_2_curve_comb()  # (1-\alpha)*old_curve + \alpha*old_curve
+        self.get_new_curve_step_2_curve_comb()  # (1-\alpha)*old_curve + \alpha*new_curve
 
         # new curve: self.new_curve_slope
         self.get_new_curve_step_3_two_pts()  # update the new curve with the two new points
@@ -298,12 +302,14 @@ class RLSetUp(OptModelSetUp):
             self.second_curve_profit.append(point_y)
 
     #get new curve_slope
-        self.second_curve_slope = [0]
+        #self.second_curve_slope = [0]
+        self.second_curve_slope = [self.curve.intial_slope_set]
         for index in range(1, len(self.second_curve_soc)):
             temp_slop = (self.second_curve_profit[index] - self.second_curve_profit[index -1])/self.curve.steps
             self.second_curve_slope.append(temp_slop)
             #change the first back
-        self.second_curve_slope[0] = self.second_curve_slope[1]
+        print(self.second_curve_slope)
+
 
     def get_new_curve_step_2_curve_comb(self):
     #new curve combine with the old_slope
@@ -318,22 +324,24 @@ class RLSetUp(OptModelSetUp):
 
     # get second point
     # get second point profit
-        if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
-            self.second_point_soc_sum = self.optimal_soc_sum - self.curve.steps
-            self.second_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
-        else:
-            self.second_point_soc_sum = self.optimal_soc_sum + self.curve.steps
-            self.second_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
-            #self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
+    #     if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
+    #         self.second_point_soc_sum = self.optimal_soc_sum - self.curve.steps #如果reach upper bound，我们把第二个点变成第一个点
+    #         self.second_point_profit = self.calculate_pts_previous(self.previous_point_soc_sum)
+    #     else:
+
+        self.second_point_soc_sum = self.optimal_soc_sum + self.curve.steps
+        #self.second_point_profit = self.calculate_pts(self.second_point_soc_sum)
+        self.second_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
 
     # get previous point profit
-        if self.optimal_soc_sum + self.curve.steps > self.curve.up_bd:
-            self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
-            self.previous_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
-        else:
-            self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
-            self.previous_point_profit = self.calculate_pts_previous(self.previous_point_soc_sum)
-            #self.previous_point_profit = self.calculate_pts(self.previous_point_soc_sum)
+    #     if self.optimal_soc_sum - self.curve.steps < self.curve.up_bd: #如果reach lower bound，我们把第一个点变成第二个点
+    #         self.previous_point_soc_sum = self.optimal_soc_sum + self.curve.steps
+    #         self.previous_point_profit = self.calculate_pts_previous(self.second_point_soc_sum)
+    #     else:
+
+        self.previous_point_soc_sum = self.optimal_soc_sum - self.curve.steps
+        #self.previous_point_profit = self.calculate_pts(self.previous_point_soc_sum)
+        self.previous_point_profit = self.calculate_pts_previous(self.previous_point_soc_sum)
     #######shall we get the optimal at previous???
         self.pre_scen_optimal_profit = self.calculate_pts_previous(self.optimal_soc_sum)
         #self.pre_scen_optimal_profit = self.calculate_pts(self.optimal_soc_sum)
@@ -342,14 +350,18 @@ class RLSetUp(OptModelSetUp):
             #self.optimal_profit and self.optimal_soc_sum
             self.update_point_1_x = self.optimal_soc_sum
             self.update_point_1_y = (self.pre_scen_optimal_profit - self.previous_point_profit) / self.curve.steps
-            ##这里写错了，到底是update前面的点，还是这个点？
-            self.update_point_2_x = self.optimal_soc_sum
-            self.update_point_2_y = (self.pre_scen_optimal_profit - self.previous_point_profit) / self.curve.steps
-        else:
-            self.update_point_1_x = self.optimal_soc_sum
-            self.update_point_1_y = (self.pre_scen_optimal_profit - self.previous_point_profit)/self.curve.steps
+            self.update_point_2_x = self.update_point_1_x
+            self.update_point_2_y = self.update_point_1_y
+        elif self.optimal_soc_sum - self.curve.steps < self.curve.lo_bd:
             self.update_point_2_x = self.second_point_soc_sum
             self.update_point_2_y = (self.second_point_profit - self.pre_scen_optimal_profit)/self.curve.steps
+            self.update_point_1_x = self.update_point_2_x
+            self.update_point_1_y = self.update_point_2_y
+        else:
+            self.update_point_1_x = self.optimal_soc_sum
+            self.update_point_1_y = (self.pre_scen_optimal_profit-self.previous_point_profit) / self.curve.steps
+            self.update_point_2_x = self.second_point_soc_sum
+            self.update_point_2_y = (self.second_point_profit-self.pre_scen_optimal_profit) / self.curve.steps
         self.update_point_1 = [self.update_point_1_x, self.update_point_1_y]
         self.update_point_2 = [self.update_point_2_x, self.update_point_2_y]
 
@@ -396,9 +408,11 @@ class RLSetUp(OptModelSetUp):
 
         self.curr_cost = sum(point_profit)
         for k in self.e_system.parameter['EName']:
+            #for i in range(self.curve.numbers):
             for i in range(self.curve.numbers):
                 bench_num = i
-                point_profit.append(self.curve.point_Y[bench_num] * point_x_soc[bench_num])
+                #point_profit.append(self.curve.point_Y[bench_num] * point_x_soc[bench_num])
+                point_profit.append(self.curve.point_Y[bench_num + 1] * point_x_soc[bench_num])
         point_profit_sum = sum(point_profit)
         return point_profit_sum
 
@@ -418,8 +432,10 @@ class RLSetUp(OptModelSetUp):
 
         for k in self.e_system.parameter['EName']:
             for i in range(self.pre_curve.numbers):
+            #for i in range(self.pre_curve.numbers):
                 bench_num = i
-                point_profit.append(self.pre_curve.point_Y[bench_num] * point_x_soc[bench_num])
+                point_profit.append(self.pre_curve.point_Y[bench_num + 1] * point_x_soc[bench_num])
+                #point_profit.append(self.pre_curve.point_Y[bench_num] * point_x_soc[bench_num])
         point_profit_sum = sum(point_profit)
         return point_profit_sum
 
@@ -430,7 +446,7 @@ class RLSetUp(OptModelSetUp):
         rest = point_X % self.curve.steps
         point_x_soc = []
         for i in range(self.curve.numbers):
-            if turn_1 >  0:
+            if turn_1 > 0:
                 point_x_soc.append(self.curve.steps)
                 turn_1 -= 1
             elif turn_1 == 0:
