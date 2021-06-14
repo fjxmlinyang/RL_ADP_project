@@ -100,7 +100,11 @@ for curr_scenario in range(start, end):
 
     filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(curr_scenario) +'_'+ curr_model.date + '.csv'
     if SOC_Results[-1] - e_system_1.parameter['EEnd'][0] > 0.1:
+<<<<<<< Updated upstream
         PSH_Results.append((SOC_Results[-1]-e_system_1.parameter['EEnd'][0]) * psh_system_1.parameter['GenEfficiency'][0])
+=======
+        PSH_Results.append((SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) * psh_system_1.parameter['GenEfficiency'][0])
+>>>>>>> Stashed changes
     else:
         PSH_Results.append((SOC_Results[-1]-e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['PumpEfficiency'][0])
 
