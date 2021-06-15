@@ -8,14 +8,17 @@ from CurrModelPara import *
 from Curve import *
 from Main_cal_opt import find_optimal_value
 
-#date = 'March 07 2019'
+date = 'March 07 2019'
 #date = 'April 01 2019'
 #date = 'April 15 2019'
-date = 'April 22 2019'
+#date = 'April 22 2019'
 
 start = 1
-end = 200
+end = 20
 Curr_Scenario_Cost_Total = []
+
+current_stage = 'training_50'
+
 for curr_scenario in range(start, end):
     PSH_Results = []
     SOC_Results = []
@@ -23,7 +26,7 @@ for curr_scenario in range(start, end):
 
     for curr_time in range(23):
 
-        curr_model = CurrModelPara(0, 1, 1,  date , curr_time, curr_scenario)
+        curr_model = CurrModelPara(0, 1, 1,  date, curr_time, curr_scenario, current_stage)
         #LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
         print('################################## psh_system set up ##################################')
         psh_model_1 = curr_model
@@ -51,6 +54,7 @@ for curr_scenario in range(start, end):
         curve_old = Curve(100, 0, 3000)
 
         curve_old.input_curve(curr_time, curr_scenario - 1)
+
         print(curve_old.segments)
 
         print('################################## ADP training model set up ##################################')
@@ -61,6 +65,7 @@ for curr_scenario in range(start, end):
         ###input prev_lmp and curve
         if curr_time != 22:
         ##lmp, time =t+1, scenario= n
+
             prev_model = CurrModelPara(0, 1, 1, date, curr_time + 1, curr_scenario)
             prev_lmp = LMP(prev_model)
             prev_lmp.set_up_parameter()
@@ -68,7 +73,9 @@ for curr_scenario in range(start, end):
             pre_curve = Curve(100, 0, 3000)
             pre_curve.input_curve(curr_time + 1, curr_scenario - 1)
         elif curr_time == 22:
+
             prev_model = CurrModelPara(0, 1, 1, date, curr_time, curr_scenario)
+
             prev_lmp = LMP(prev_model)
             prev_lmp.set_up_parameter()
 
@@ -100,11 +107,7 @@ for curr_scenario in range(start, end):
 
     filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(curr_scenario) +'_'+ curr_model.date + '.csv'
     if SOC_Results[-1] - e_system_1.parameter['EEnd'][0] > 0.1:
-<<<<<<< Updated upstream
-        PSH_Results.append((SOC_Results[-1]-e_system_1.parameter['EEnd'][0]) * psh_system_1.parameter['GenEfficiency'][0])
-=======
         PSH_Results.append((SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) * psh_system_1.parameter['GenEfficiency'][0])
->>>>>>> Stashed changes
     else:
         PSH_Results.append((SOC_Results[-1]-e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['PumpEfficiency'][0])
 

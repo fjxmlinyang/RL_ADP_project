@@ -7,6 +7,8 @@ from Model_SetUp import *
 from CurrModelPara import *
 from Curve import *
 
+
+#this is for
 date = 'March 07 2019'
 #date = 'April 01 2019'
 #date = 'April 15 2019'
@@ -14,19 +16,20 @@ date = 'March 07 2019'
 start = 1
 end = 50
 
+current_stage = 'training_50'
+
 def find_optimal_value(date, start, end):
     opt_results = []
     Curr_Scenario_Cost_Total = []
     for curr_scenario  in range(start, end):
-        psh_results = []
-        soc_results = []
-        lmp_results = []
+        PSH_Results = []
+        SOC_Results = []
         curr_scenario_cost_total = 0
 
         for curr_time in range(23):
 
             #this for day ahead
-            curr_model = CurrModelPara(1 , 1, 0,  date, curr_time, curr_scenario)
+            curr_model = CurrModelPara(1 , 1, 0,  date, curr_time, curr_scenario, current_stage)
             psh_model_1 = curr_model
             psh_system_1 = PshSystem(psh_model_1)
             psh_system_1.set_up_parameter()
@@ -50,41 +53,101 @@ def find_optimal_value(date, start, end):
             ADP_opt_model_para = curr_model
             ADP_opt = RLSetUp(psh_system_1, e_system_1, lmp_1, curve_old, ADP_opt_model_para, model_1, prev_lmp, pre_curve)
             ADP_opt.SPARstorage_model()
+      ##output SOC and Psh
+        # print(ADP_train_system.soc)
+        #print(ADP_train_system.optimal_soc_sum)
+        #print(ADP_train_system.optimal_profit)
+            print('##############################'+ str(curr_time) +'######################################')
 
-            soc_results.append(ADP_opt.optimal_soc_sum)
+            SOC_Results.append(ADP_opt.optimal_soc_sum)
             if ADP_opt.optimal_psh_gen_sum > 1:
-                psh_results.append(ADP_opt.optimal_psh_gen_sum)
+                PSH_Results.append(ADP_opt.optimal_psh_gen_sum)
             else:
-                psh_results.append(-ADP_opt.optimal_psh_pump_sum)
-        lmp_results.append(lmp_1.lmp_scenarios[0])
+                PSH_Results.append(-ADP_opt.optimal_psh_pump_sum)
 
-        ##add the current cost
-        curr_scenario_cost_total += ADP_opt.curr_cost
-        print(curr_scenario_cost_total)
+            ##output curr cost
+            curr_scenario_cost_total += ADP_opt.curr_cost
+            print(curr_scenario_cost_total)
+
         # add the last one
 
-        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(curr_scenario) +'_'+curr_model.date + '.csv'
-        psh_results.append((soc_results[-1] - e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['GenEfficiency'][0])
-        soc_results.append(e_system_1.parameter['EEnd'][0])
+        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(
+            curr_scenario) + '_' + curr_model.date + '.csv'
+        if SOC_Results[-1] - e_system_1.parameter['EEnd'][0] > 0.1:
+            PSH_Results.append(
+                (SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) * psh_system_1.parameter['GenEfficiency'][0])
+        else:
+            PSH_Results.append(
+                (SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['PumpEfficiency'][0])
 
-        curr_optimal_solution = 0
-        for i in range(23):
-            curr_optimal_solution += psh_results[i] * lmp_results[i]
+        SOC_Results.append(e_system_1.parameter['EEnd'][0])
 
-        opt_results.append(curr_optimal_solution)
+        df = pd.DataFrame(
+            {'SOC_Results_' + str(curr_scenario): SOC_Results, 'PSH_Results_' + str(curr_scenario): PSH_Results})
+        # df = pd.DataFrame({'PSH_Results_' + str(curr_scenario): PSH_Results})
+        # df.to_csv(filename)
+        if curr_scenario == start:
+            df_total = df
+        else:
+            df_total = pd.concat([df_total, df], axis=1)
 
-    df = pd.DataFrame({ 'opt_results': opt_results})
-    filename = './Output_Curve' + '/Optimal_Solution_Results_' + 'total' +'_'+ curr_model.date + '.csv'
+        ##calculate total cost
+        Curr_Scenario_Cost_Total.append(curr_scenario_cost_total)
+
+    #output the psh and soc
+    filename = './Output_Curve' + '/test_PSH_Profitmax_Rolling_Results_' + 'total' +'_'+ curr_model.date + '.csv'
+    df_total.to_csv(filename)
+
+    #output curr_cost
+    filename = './Output_Curve' + '/test_Current_Cost_Total_Results_' + str(curr_scenario) + '_' + curr_model.date + '.csv'
+    df = pd.DataFrame({'Curr_Scenario_Cost_Total': Curr_Scenario_Cost_Total})
     df.to_csv(filename)
 
-    Curr_Scenario_Cost_Total.append(curr_scenario_cost_total)
+
+
+find_optimal_value(date, start, end)
 
 
 
-    filename = './Output_Curve' + '/Opt_Cost_Total_Results_' + str(curr_scenario) + '_' + curr_model.date + '.csv'
-    df = pd.DataFrame({'Opt_Cost_Total': Curr_Scenario_Cost_Total})
-    df.to_csv(filename)
 
 
 
-#find_optimal_value(date, start, end)
+
+#
+#             soc_results.append(ADP_opt.optimal_soc_sum)
+#             if ADP_opt.optimal_psh_gen_sum > 1:
+#                 psh_results.append(ADP_opt.optimal_psh_gen_sum)
+#             else:
+#                 psh_results.append(-ADP_opt.optimal_psh_pump_sum)
+#         lmp_results.append(lmp_1.lmp_scenarios[0])
+#
+#         ##add the current cost
+#         curr_scenario_cost_total += ADP_opt.curr_cost
+#         print(curr_scenario_cost_total)
+#         # add the last one
+#
+#         filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(curr_scenario) +'_'+curr_model.date + '.csv'
+#         psh_results.append((soc_results[-1] - e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['GenEfficiency'][0])
+#         soc_results.append(e_system_1.parameter['EEnd'][0])
+#
+#         curr_optimal_solution = 0
+#         for i in range(23):
+#             curr_optimal_solution += psh_results[i] * lmp_results[i]
+#
+#         opt_results.append(curr_optimal_solution)
+#
+#     df = pd.DataFrame({ 'opt_results': opt_results})
+#     filename = './Output_Curve' + '/Optimal_Solution_Results_' + 'total' +'_'+ curr_model.date + '.csv'
+#     df.to_csv(filename)
+#
+#     Curr_Scenario_Cost_Total.append(curr_scenario_cost_total)
+#
+#
+#
+#     filename = './Output_Curve' + '/Opt_Cost_Total_Results_' + str(curr_scenario) + '_' + curr_model.date + '.csv'
+#     df = pd.DataFrame({'Opt_Cost_Total': Curr_Scenario_Cost_Total})
+#     df.to_csv(filename)
+#
+#
+#
+# find_optimal_value(date, start, end)

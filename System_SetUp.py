@@ -29,11 +29,12 @@ class System():
         self.Output_folder = None
         self.parameter = {}
         #this is for easy
-        self.Input_all_total = './Input_Curve'
-        #this is for real
-        #self.Input_all_total = './Input_bootstrap'
-        ##this is for test
-        #self.Input_all_total = './Input_test'
+        if curr_model.current_stage == 'training_50':
+            self.Input_all_total = './Input_Curve'
+        if curr_model.current_stage == 'training_500':
+            self.Input_all_total = './Input_bootstrap'
+        if curr_model.current_stage == 'test':
+            self.Input_all_total = './Input_test'
 
     def input_parameter(self, paranameter_name, in_model_name):
         Data = pd.read_csv(self.filename)
@@ -111,7 +112,7 @@ class LMP(System):
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_550' + '.csv'
             elif self.curr_model.probabilistic and self.Input_all_total == './Input_test':
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_550' + '.csv'
-            elif self.curr_model.probabilistic and self.Input_all_total != './Input_bootstrap':
+            elif self.curr_model.probabilistic and self.Input_all_total == './Input_Curve':
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_50' + '.csv'
             else:
                 self.filename = self.Input_folder + '/prd_dataframe_wlen_'+ str(24-self.curr_model.LAC_bhour)+'_'+ self.curr_model.date + '.csv'

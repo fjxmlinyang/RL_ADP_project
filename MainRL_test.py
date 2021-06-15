@@ -18,8 +18,10 @@ date = 'March 07 2019'
 #date = 'April 22 2019'
 
 start = 1
-end = 500
+end = 10
 Curr_Scenario_Cost_Total = []
+#current_stage = 'test'
+current_stage = 'training_50'
 for curr_scenario in range(start, end):
     PSH_Results = []
     SOC_Results = []
@@ -27,7 +29,7 @@ for curr_scenario in range(start, end):
 
     for curr_time in range(23):
 
-        curr_model = CurrModelPara(1 , 1, 0,  date, curr_time, curr_scenario)
+        curr_model = CurrModelPara(1 , 1, 0,  date, curr_time, curr_scenario, current_stage)
         #LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
         print('################################## psh_system set up ##################################')
         psh_model_1 = curr_model
@@ -65,14 +67,14 @@ for curr_scenario in range(start, end):
         ###input prev_lmp and curve
         if curr_time != 22:
         ##lmp, time =t+1, scenario= n
-            prev_model = CurrModelPara(0, 1, 1,  date , curr_time + 1 , curr_scenario)
+            prev_model = CurrModelPara(1, 1, 0,  date , curr_time + 1 , curr_scenario, current_stage)
             prev_lmp = LMP(prev_model)
             prev_lmp.set_up_parameter()
         ##curve, time =t+1, scenario= n-1
             pre_curve = Curve(100, 0, 3000)
-            pre_curve.input_curve(curr_time +1, curr_scenario - 1)
+            pre_curve.input_curve(curr_time + 1, curr_scenario - 1)
         elif curr_time == 22:
-            prev_model = CurrModelPara(0, 1, 1,  date , curr_time , curr_scenario)
+            prev_model = CurrModelPara(1, 1, 0,  date , curr_time , curr_scenario, current_stage)
             prev_lmp = LMP(prev_model)
             prev_lmp.set_up_parameter()
 
