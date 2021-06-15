@@ -80,6 +80,7 @@ class ESystem(System):
 
         self.Output_folder='./Output_Curve'
         #here are for rolling model
+        #here we can set the benchmark?
         if self.curr_model.LAC_bhour == 0:
             self.input_parameter('Start', 'EStart')
             self.e_start_folder = self.Output_folder

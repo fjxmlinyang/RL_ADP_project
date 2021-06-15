@@ -65,14 +65,17 @@ for curr_scenario in range(start, end):
         ###input prev_lmp and curve
         if curr_time != 22:
         ##lmp, time =t+1, scenario= n
-            prev_model = CurrModelPara(0, 1, 1,  date, curr_time + 1, curr_scenario, current_stage)
+
+            prev_model = CurrModelPara(0, 1, 1, date, curr_time + 1, curr_scenario)
             prev_lmp = LMP(prev_model)
             prev_lmp.set_up_parameter()
         ##curve, time =t+1, scenario= n-1
             pre_curve = Curve(100, 0, 3000)
             pre_curve.input_curve(curr_time + 1, curr_scenario - 1)
         elif curr_time == 22:
-            prev_model = CurrModelPara(0, 1, 1,  date, curr_time, curr_scenario, current_stage)
+
+            prev_model = CurrModelPara(0, 1, 1, date, curr_time, curr_scenario)
+
             prev_lmp = LMP(prev_model)
             prev_lmp.set_up_parameter()
 
@@ -103,10 +106,10 @@ for curr_scenario in range(start, end):
     # add the last one
 
     filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(curr_scenario) +'_'+ curr_model.date + '.csv'
-    if SOC_Results[-1] - e_system_1.parameter['EEnd'][0]> 0.1:
+    if SOC_Results[-1] - e_system_1.parameter['EEnd'][0] > 0.1:
         PSH_Results.append((SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) * psh_system_1.parameter['GenEfficiency'][0])
     else:
-        PSH_Results.append((SOC_Results[-1] - e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['PumpEfficiency'][0])
+        PSH_Results.append((SOC_Results[-1]-e_system_1.parameter['EEnd'][0]) / psh_system_1.parameter['PumpEfficiency'][0])
 
     SOC_Results.append(e_system_1.parameter['EEnd'][0])
 
