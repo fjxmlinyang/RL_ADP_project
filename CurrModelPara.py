@@ -1,5 +1,6 @@
 class CurrModelPara():
-    def __init__(self, LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario, current_stage):
+    def __init__(self, LAC_last_windows, probabilistic, RT_DA, date, LAC_bhour, scenario):
+
         # set the length of the rolling window
         # LAC_window = 1
 
