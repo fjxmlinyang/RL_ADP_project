@@ -147,23 +147,41 @@ class RL_Kernel():
     #get new curve_profit
         self.second_curve_profit = []
         beta = 0.001
+
+        # make sure its terminal soc works
+
         for value in self.second_curve_soc:
-            left_value = (value - float(self.e_system.parameter['EEnd'])) - ((23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency']) + beta))
-            right_value = (value - float(self.e_system.parameter['EEnd'])) - (-(23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency']) - beta))
-            if (left_value < 0  and right_value > 0):
+            left_value = (value - float(self.e_system.parameter['EEnd'])) - (
+                    (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (
+                    float(self.psh_system.parameter['GenEfficiency']) + beta))
+            right_value = (value - float(self.e_system.parameter['EEnd'])) - (
+                    -(23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (
+                    float(self.psh_system.parameter['PumpEfficiency']) - beta))
+            if (left_value < 0 and right_value > 0):
                 point_y = self.calculate_new_soc(value)
             else:
                 point_y = self.calculate_pts(value)
 
             self.second_curve_profit.append(point_y)
 
+
     #get new curve_slope
-        self.second_curve_slope = [0]
+        self.second_curve_slope = [self.old_curve.intial_slope_set]
         for index in range(1, len(self.second_curve_soc)):
             temp_slop = (self.second_curve_profit[index] - self.second_curve_profit[index -1])/self.curve.steps
             self.second_curve_slope.append(temp_slop)
             #change the first back
-        self.second_curve_slope[0] = self.second_curve_slope[1]
+        #self.second_curve_slope[0] = self.second_curve_slope.intial_slope_set
+
+    # make sure it is convex
+        for i in range(len(self.second_curve_slope)):
+            _cur = len(self.second_curve_slope) - i - 1
+            if _cur != 0 and self.second_curve_slope[_cur] > self.second_curve_slope[_cur-1]:
+                self.second_curve_slope[_cur - 1] = self.second_curve_slope[_cur]
+
+
+
+
 
     def get_new_curve_step_2_curve_comb(self):
     #new curve combine with the old_slope
