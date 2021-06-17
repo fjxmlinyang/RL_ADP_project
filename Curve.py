@@ -24,7 +24,7 @@ class Curve(object):
                 value = 50
                 self.intial_slope_set = value
             else:
-                value =  50 - i // self.steps #/10
+                value =  value - 0.02*self.steps #/10
                 #value = 50 - curr_step *0.4
             #value = (100 - 2*i // self.steps)
             segments.append([i, value])

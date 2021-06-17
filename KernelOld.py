@@ -17,18 +17,18 @@ class RL_Kernel():
         #self.action = None
         self.alpha = 0.2
         self.date = 'March 07 2019'
-        self.LAC_last_windows = 1#0
-        self.probabilistic = 0#1
-        self.RT_DA = 0#1
+        self.LAC_last_windows = 0
+        self.probabilistic = 1
+        self.RT_DA = 1
         self.curr_time = 0
         self.curr_scenario = 1
         self.current_stage ='training_50'
 
     def main_function(self):
         start = 1
-        end = 49
+        end = 2
         for curr_scenario in range(start, end):
-            for i in range(0, 23):
+            for i in range(16, 17):
                 self.curr_time = i
                 self.curr_scenario = curr_scenario
                 self.calculate_optimal_soc()
@@ -74,8 +74,6 @@ class RL_Kernel():
         self.curr_model = RLSetUp(self.psh_system, self.e_system, self.lmp, self.old_curve, self.curr_model_para, model_1)
         self.curr_model.optimization_model()
         self.optimal_soc_sum = self.curr_model.optimal_soc_sum
-        self.optimal_psh_gen_sum = self.curr_model.optimal_psh_gen_sum
-        self.optimal_psh_pump_sum = self.curr_model.optimal_psh_pump_sum
         print(self.curr_model.optimal_soc_sum)
 
 
@@ -146,42 +144,17 @@ class RL_Kernel():
 
     #get new curve_profit
         self.second_curve_profit = []
-        beta = 0.001
-
-        # make sure its terminal soc works
-
         for value in self.second_curve_soc:
-            left_value = (value - float(self.e_system.parameter['EEnd'])) - (
-                    (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (
-                    float(self.psh_system.parameter['GenEfficiency']) + beta))
-            right_value = (value - float(self.e_system.parameter['EEnd'])) - (
-                    -(23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (
-                    float(self.psh_system.parameter['PumpEfficiency']) - beta))
-            if (left_value < 0 and right_value > 0):
-                point_y = self.calculate_new_soc(value)
-            else:
-                point_y = self.calculate_pts(value)
-
+            point_y = self.calculate_new_soc(value)
             self.second_curve_profit.append(point_y)
 
-
     #get new curve_slope
-        self.second_curve_slope = [self.old_curve.intial_slope_set]
+        self.second_curve_slope = [0]
         for index in range(1, len(self.second_curve_soc)):
             temp_slop = (self.second_curve_profit[index] - self.second_curve_profit[index -1])/self.curve.steps
             self.second_curve_slope.append(temp_slop)
             #change the first back
-        #self.second_curve_slope[0] = self.second_curve_slope.intial_slope_set
-
-    # make sure it is convex
-        for i in range(len(self.second_curve_slope)):
-            _cur = len(self.second_curve_slope) - i - 1
-            if _cur != 0 and self.second_curve_slope[_cur] > self.second_curve_slope[_cur-1]:
-                self.second_curve_slope[_cur - 1] = self.second_curve_slope[_cur]
-
-
-
-
+        self.second_curve_slope[0] = self.second_curve_slope[1]
 
     def get_new_curve_step_2_curve_comb(self):
     #new curve combine with the old_slope
@@ -267,40 +240,40 @@ class RL_Kernel():
         df.to_csv(filename, index=False, header=True)
 
 
-    def calculate_pts(self, point_X):
-        #put the soc_sum in, we get the profit
-        point_x_soc = self.x_to_soc(point_X)
-        point_profit = []
-        for s in range(self.lmp.Nlmp_s):
-            p_s = self.lmp.lmp_quantiles[s]
-            for j in self.psh_system.parameter['PSHName']:
-                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
-        # for j in self.psh_system.parameter['PSHName']:
-        #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+    # def calculate_pts(self, point_X):
+    #     #put the soc_sum in, we get the profit
+    #     point_x_soc = self.x_to_soc(point_X)
+    #     point_profit = []
+    #     for s in range(self.lmp.Nlmp_s):
+    #         p_s = self.lmp.lmp_quantiles[s]
+    #         for j in self.psh_system.parameter['PSHName']:
+    #             point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
+    #     # for j in self.psh_system.parameter['PSHName']:
+    #     #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+    #
+    #     self.curr_cost = sum(point_profit)
+    #     for k in self.e_system.parameter['EName']:
+    #         for i in range(self.curve.numbers):
+    #             bench_num = i
+    #             point_profit.append(self.curve.point_Y[bench_num] * point_x_soc[bench_num])
+    #     point_profit_sum = sum(point_profit)
+    #     return point_profit_sum
 
-        self.curr_cost = sum(point_profit)
-        for k in self.e_system.parameter['EName']:
-            for i in range(self.curve.numbers):
-                bench_num = i
-                point_profit.append(self.curve.point_Y[bench_num] * point_x_soc[bench_num])
-        point_profit_sum = sum(point_profit)
-        return point_profit_sum
-
-    def x_to_soc(self, point_X):
-        #change soc_sum to soc_1 + soc_2 + soc_3
-        turn_1 = point_X // self.curve.steps
-        rest = point_X % self.curve.steps
-        point_x_soc = []
-        for i in range(self.curve.numbers):
-            if turn_1 >  0:
-                point_x_soc.append(self.curve.steps)
-                turn_1 -= 1
-            elif turn_1 == 0:
-                point_x_soc.append(rest)
-                turn_1 -= 1
-            else:
-                point_x_soc.append(0)
-        return point_x_soc
+    # def x_to_soc(self, point_X):
+    #     #change soc_sum to soc_1 + soc_2 + soc_3
+    #     turn_1 = point_X // self.curve.steps
+    #     rest = point_X % self.curve.steps
+    #     point_x_soc = []
+    #     for i in range(self.curve.numbers):
+    #         if turn_1 >  0:
+    #             point_x_soc.append(self.curve.steps)
+    #             turn_1 -= 1
+    #         elif turn_1 == 0:
+    #             point_x_soc.append(rest)
+    #             turn_1 -= 1
+    #         else:
+    #             point_x_soc.append(0)
+    #     return point_x_soc
 
 
 
