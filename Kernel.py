@@ -25,16 +25,70 @@ class RL_Kernel():
         self.current_stage ='training_50'
 
     def main_function(self):
-        start = 1
-        end = 49
-        for curr_scenario in range(start, end):
+        self.Curr_Scenario_Cost_Total = []
+        self.start = 1
+        self.end = 2
+        for curr_scenario in range(self.start, self.end):
+            self.PSH_Results = []
+            self.SOC_Results = []
+            self.curr_scenario_cost_total = 0
             for i in range(0, 23):
                 self.curr_time = i
                 self.curr_scenario = curr_scenario
                 self.calculate_optimal_soc()
                 self.get_final_curve_main()
+                self.output_psh_soc()
+            self.output_psh_soc_main()
+        self.output_curr_cost()
 
 
+    def output_curr_cost(self):
+        # output the psh and soc
+        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + '_' + curr_model.date + '.csv'
+        self.df_total.to_csv(filename)
+
+        # output curr_cost
+        filename = './Output_Curve' + '/Current_Cost_Total_Results_' + str(
+            curr_scenario) + '_' + curr_model.date + '.csv'
+        self.df = pd.DataFrame({'Curr_Scenario_Cost_Total': Curr_Scenario_Cost_Total})
+        self.df.to_csv(filename)
+
+    def output_psh_soc_main(self):
+        # add the last one
+
+        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(
+            self.curr_scenario) + '_' + self.curr_model.date + '.csv'
+        if self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0] > 0.1:
+            self.PSH_Results.append(
+                (self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0]) * self.psh_system.parameter['GenEfficiency'][0])
+        else:
+            self.PSH_Results.append(
+                (self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0]) / self.psh_system.parameter['PumpEfficiency'][0])
+
+        self.SOC_Results.append(self.e_system.parameter['EEnd'][0])
+
+        self.df = pd.DataFrame(
+            {'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, 'PSH_Results_' + str(self.curr_scenario): self.PSH_Results})
+        # df = pd.DataFrame({'PSH_Results_' + str(curr_scenario): PSH_Results})
+        # df.to_csv(filename)
+        if self.curr_scenario == self.start:
+            self.df_total = self.df
+        else:
+            self.df_total = pd.concat([self.df_total, self.df], axis=1)
+
+        ##calculate total cost
+        self.Curr_Scenario_Cost_Total.append(self.curr_scenario_cost_total)
+
+    def output_psh_soc(self):
+        self.SOC_Results.append(self.curr_model.optimal_soc_sum)
+        if self.curr_model.optimal_psh_gen_sum > 1:
+            self.PSH_Results.append(self.curr_model.optimal_psh_gen_sum)
+        else:
+            self.PSH_Results.append(-self.curr_model.optimal_psh_pump_sum)
+
+        ##output curr cost
+        self.curr_scenario_cost_total += self.curr_cost
+        #
 
 
 
@@ -137,6 +191,7 @@ class RL_Kernel():
         print(self.curve.segments)
         self.output_curve()
         self.output_curve_sum()
+
 
 
     def get_new_curve_step_1(self):

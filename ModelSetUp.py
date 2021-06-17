@@ -197,6 +197,7 @@ class OptModelSetUp():
 #####################################################
     def get_optimal_profit(self):
     #get optimal profit
+        #self.optimal_profit = self.calculate_pts(self.optimal_soc_sum) ##注意这里
         obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
         self.optimal_profit = obj.getValue()
     def output_optimal(self):
