@@ -176,8 +176,8 @@ class OptModelSetUp():
             soc = v.X
             self.optimal_soc.append(soc)
         self.optimal_soc_sum = sum(self.optimal_soc)
-        a = self.optimal_soc_sum
-        print(a)
+        #a = self.optimal_soc_sum
+        #print(a)
 
 
     def get_optimal_gen_pump(self):
@@ -200,6 +200,20 @@ class OptModelSetUp():
         #self.optimal_profit = self.calculate_pts(self.optimal_soc_sum) ##注意这里
         obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
         self.optimal_profit = obj.getValue()
+
+    def get_curr_cost(self):
+        #put the soc_sum in, we get the profit
+        point_profit = []
+        for s in range(self.lmp.Nlmp_s):
+            p_s = self.lmp.lmp_quantiles[s]
+            for j in self.psh_system.parameter['PSHName']:
+                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
+        # for j in self.psh_system.parameter['PSHName']:
+        #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+
+        self.curr_cost = sum(point_profit)
+
+
     def output_optimal(self):
     #output the e for next time
         filename = self.e_system.e_start_folder + '/LAC_Solution_System_SOC_'+ str(self.curr_model_para.LAC_bhour) + '.csv'
@@ -213,6 +227,8 @@ class OptModelSetUp():
                 name = _temp
                 st = time + ',' + '%s,%.1f' % (name, self.optimal_e) + '\n'
                 wf.write(st)
+
+
 
 
 
@@ -236,6 +252,7 @@ class RLSetUp(OptModelSetUp):
         self.get_optimal_soc()
         self.get_optimal_gen_pump()
         self.get_optimal_profit()
+        self.get_curr_cost()
         self.output_optimal()
 
 
@@ -279,6 +296,10 @@ class RLSetUp(OptModelSetUp):
             else:
                 point_x_soc.append(0)
         return point_x_soc
+
+
+
+
 
 
 

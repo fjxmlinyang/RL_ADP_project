@@ -27,7 +27,7 @@ class RL_Kernel():
     def main_function(self):
         self.Curr_Scenario_Cost_Total = []
         self.start = 1
-        self.end = 2
+        self.end = 49
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []
@@ -44,20 +44,20 @@ class RL_Kernel():
 
     def output_curr_cost(self):
         # output the psh and soc
-        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + '_' + curr_model.date + '.csv'
+        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + '_' + self.date + '.csv'
         self.df_total.to_csv(filename)
 
         # output curr_cost
         filename = './Output_Curve' + '/Current_Cost_Total_Results_' + str(
-            curr_scenario) + '_' + curr_model.date + '.csv'
-        self.df = pd.DataFrame({'Curr_Scenario_Cost_Total': Curr_Scenario_Cost_Total})
+            self.curr_scenario) + '_' + self.date + '.csv'
+        self.df = pd.DataFrame({'Curr_Scenario_Cost_Total': self.Curr_Scenario_Cost_Total})
         self.df.to_csv(filename)
 
     def output_psh_soc_main(self):
         # add the last one
 
         filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(
-            self.curr_scenario) + '_' + self.curr_model.date + '.csv'
+            self.curr_scenario) + '_' + self.date + '.csv'
         if self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0] > 0.1:
             self.PSH_Results.append(
                 (self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0]) * self.psh_system.parameter['GenEfficiency'][0])
@@ -87,7 +87,7 @@ class RL_Kernel():
             self.PSH_Results.append(-self.curr_model.optimal_psh_pump_sum)
 
         ##output curr cost
-        self.curr_scenario_cost_total += self.curr_cost
+        self.curr_scenario_cost_total += self.curr_model.curr_cost
         #
 
 
@@ -130,6 +130,7 @@ class RL_Kernel():
         self.optimal_soc_sum = self.curr_model.optimal_soc_sum
         self.optimal_psh_gen_sum = self.curr_model.optimal_psh_gen_sum
         self.optimal_psh_pump_sum = self.curr_model.optimal_psh_pump_sum
+
         print(self.curr_model.optimal_soc_sum)
 
 
@@ -204,20 +205,34 @@ class RL_Kernel():
         beta = 0.001
 
         # make sure its terminal soc works
-
+        self.check_soc_curve = []
         for value in self.second_curve_soc:
-            left_value = (value - float(self.e_system.parameter['EEnd'])) - (
-                    (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (
-                    float(self.psh_system.parameter['GenEfficiency']) + beta))
-            right_value = (value - float(self.e_system.parameter['EEnd'])) - (
-                    -(23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (
-                    float(self.psh_system.parameter['PumpEfficiency']) - beta))
-            if (left_value < 0 and right_value > 0):
+            distance = value - float(self.e_system.parameter['EEnd'])
+            left_cod = distance < 0 and (distance < abs(23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency'])-beta) )
+            right_cod = distance > 0 and (distance < abs(23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency'])+beta) )
+            # left_value = (value - float(self.e_system.parameter['EEnd'])) - (
+            #         (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (
+            #         float(self.psh_system.parameter['GenEfficiency']) + beta))
+            # right_value = (value - float(self.e_system.parameter['EEnd'])) - (
+            #         -(23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (
+            #         float(self.psh_system.parameter['PumpEfficiency']) - beta))
+            if left_cod and right_cod:
                 point_y = self.calculate_new_soc(value)
+                check = 1
             else:
+                #point_y = 0
                 point_y = self.calculate_pts(value)
-
+                check = 0
+            #FIND the left and right point of using cal_new_soc
             self.second_curve_profit.append(point_y)
+            self.check_soc_curve.append(check)
+        self.left = None
+        self.right = None
+        for item in range(len(self.check_soc_curve)):
+            if self.check_soc_curve[item] == 1 and item != 0 and self.check_soc_curve[item-1] == 0:
+                self.left = item
+            if self.check_soc_curve[item] == 1 and item !=len(self.check_soc_curve) and self.check_soc_curve[item+1] == 0:
+                self.right = item
 
 
     #get new curve_slope
@@ -228,11 +243,20 @@ class RL_Kernel():
             #change the first back
         #self.second_curve_slope[0] = self.second_curve_slope.intial_slope_set
 
-    # make sure it is convex
+    #make sure it is convex
         for i in range(len(self.second_curve_slope)):
-            _cur = len(self.second_curve_slope) - i - 1
-            if _cur != 0 and self.second_curve_slope[_cur] > self.second_curve_slope[_cur-1]:
-                self.second_curve_slope[_cur - 1] = self.second_curve_slope[_cur]
+            if self.left and i < self.left + 1:
+                self.second_curve_slope[self.left + 1]
+            elif self.right and i > self.right - 1:
+                self.second_curve_slope[self.right - 1]
+
+            # _cur = len(self.second_curve_slope) - i - 1
+            # if self.check_soc_curve[i] == 0:
+            #     if _cur != 0 and self.second_curve_slope[_cur] > self.second_curve_slope[_cur-1] and self.second_curve_slope[_cur] < self.old_curve.intial_slope_set:
+            #         self.second_curve_slope[_cur - 1] = self.second_curve_slope[_cur]
+            #     elif _cur != 0 and self.second_curve_slope[_cur] > self.second_curve_slope[_cur-1] and self.second_curve_slope[_cur] > self.old_curve.intial_slope_set:
+            #         self.second_curve_slope[_cur] = self.old_curve.intial_slope_set
+            #         self.second_curve_slope[_cur - 1] = self.old_curve.intial_slope_set
 
 
 
@@ -333,13 +357,16 @@ class RL_Kernel():
         # for j in self.psh_system.parameter['PSHName']:
         #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
 
-        self.curr_cost = sum(point_profit)
+        #self.curr_cost = sum(point_profit)
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
                 bench_num = i
                 point_profit.append(self.curve.point_Y[bench_num] * point_x_soc[bench_num])
         point_profit_sum = sum(point_profit)
         return point_profit_sum
+
+
+
 
     def x_to_soc(self, point_X):
         #change soc_sum to soc_1 + soc_2 + soc_3
