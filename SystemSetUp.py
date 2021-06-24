@@ -104,7 +104,9 @@ class LMP(System):
         self.Input_folder = self.Input_folder_parent+'/'+ self.curr_model.date
         if self.curr_model.LAC_last_windows:
             # filename = Input_folder + '\LMP_Hindsight' + '.csv'
-            self.filename = self.Input_folder + '/prd_dataframe_wlen_24_'+ self.curr_model.date + '.csv'
+            #self.filename = self.Input_folder + '/prd_dataframe_wlen_24_'+ self.curr_model.date + '.csv'
+            self.filename = self.Input_folder + '/prd_dataframe_wlen_' + str(
+                24 - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '.csv'
         else:
             # filename = Input_folder+'\LMP_Scenarios_' + 'T' + str(LAC_bhour) +'_DA'+ '.csv'
             if self.curr_model.probabilistic and self.Input_all_total == './Input_bootstrap':
