@@ -15,19 +15,19 @@ class RL_Kernel():
         #self.reward = None
         #self.value = None
         #self.action = None
-        self.alpha = 1#0.2
+        self.alpha = 0.8#0.2
         self.date = 'March 07 2019'
-        self.LAC_last_windows = 1#0
-        self.probabilistic = 0#1
-        self.RT_DA = 0#1
+        self.LAC_last_windows = 0#1#0
+        self.probabilistic = 1#0#1
+        self.RT_DA = 1#0#1
         self.curr_time = 0
         self.curr_scenario = 1
-        self.current_stage ='training_50'
+        self.current_stage ='training_500'
 
     def main_function(self):
         self.Curr_Scenario_Cost_Total = []
         self.start = 1
-        self.end = 50
+        self.end = 2
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []
@@ -119,7 +119,7 @@ class RL_Kernel():
         print('lmp_Nlmp_s=', self.lmp.Nlmp_s)
 
         print('################################## curve set up ##################################')
-        self.old_curve = Curve(30, 0, 3000)
+        self.old_curve = Curve(100, 0, 3000)
         self.old_curve.input_curve(self.curr_time, self.curr_scenario - 1)
         print(self.old_curve.segments)
 
@@ -156,7 +156,7 @@ class RL_Kernel():
             self.prev_lmp = LMP(self.prev_model)
             self.prev_lmp.set_up_parameter()
             # curve, time = t+1, scenario= n-1
-            self.pre_curve = Curve(30, 0, 3000)
+            self.pre_curve = Curve(100, 0, 3000)
             self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
         elif self.curr_time == 22:
             self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
@@ -164,7 +164,7 @@ class RL_Kernel():
             self.prev_lmp = LMP(self.prev_model)
             self.prev_lmp.set_up_parameter()
 
-            self.pre_curve = Curve(30, 0, 3000)
+            self.pre_curve = Curve(100, 0, 3000)
             self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
 
         model_1 = Model('DAMarket')
@@ -210,6 +210,7 @@ class RL_Kernel():
 
         # make sure its terminal soc works
         self.check_soc_curve = []
+    #here need parallel
         for value in self.second_curve_soc:
             distance = value - float(self.e_system.parameter['EEnd'])
             left_cod = distance <= 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency'])-beta) )
