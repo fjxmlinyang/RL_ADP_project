@@ -6,9 +6,15 @@ import numpy as np
 from ModelSetUp import *
 from CurrModelPara import *
 from Curve import *
+from numba import jit
+
 #from Main_cal_opt import find_optimal_value
 
+from joblib import Parallel, delayed
 
+import multiprocessing
+
+import time
 
 class RL_Kernel():
     def __init__(self):
@@ -36,9 +42,13 @@ class RL_Kernel():
                 self.curr_time = i
                 self.curr_scenario = curr_scenario
                 self.calculate_optimal_soc()
+                st = time.time()
                 self.get_final_curve_main()
+                et = time.time()
                 self.output_psh_soc()
+                print('one period time is ', et - st)
             self.output_psh_soc_main()
+
         self.output_curr_cost()
 
 
@@ -93,6 +103,7 @@ class RL_Kernel():
 
 
     def calculate_optimal_soc(self):
+        time_1 = time.time()
         self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time, self.curr_scenario, self.current_stage)
         # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
@@ -126,13 +137,18 @@ class RL_Kernel():
         print('################################## ADP training model set up ##################################')
         model_1 = Model('DAMarket')
         self.curr_model = RLSetUp(self.psh_system, self.e_system, self.lmp, self.old_curve, self.curr_model_para, model_1)
+        time_2 = time.time()
         self.curr_model.optimization_model()
+
         self.optimal_soc_sum = self.curr_model.optimal_soc_sum
         self.optimal_psh_gen_sum = self.curr_model.optimal_psh_gen_sum
         self.optimal_psh_pump_sum = self.curr_model.optimal_psh_pump_sum
 
-        print(self.curr_model.optimal_soc_sum)
 
+        print(self.curr_model.optimal_soc_sum)
+        time_3 = time.time()
+        print(time_2-time_1)
+        print(time_3-time_2)
 
     def calculate_new_soc(self, initial_soc):
         pre_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
@@ -197,24 +213,54 @@ class RL_Kernel():
         self.output_curve()
         self.output_curve_sum()
 
+    # def para_cal(self):
+    #     for value in self.second_curve_soc:
+    #         distance = value - float(self.e_system.parameter['EEnd'])
+    #         left_cod = distance <= 0 and (
+    #                     abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (
+    #                         float(self.psh_system.parameter['PumpEfficiency']) - self.beta))
+    #         right_cod = distance > 0 and (
+    #                     abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (
+    #                         float(self.psh_system.parameter['GenEfficiency']) + self.beta))
+    #         if left_cod or right_cod:
+    #             # if left_value < 0 and right_value > 0:
+    #             point_y = self.calculate_new_soc(value)
+    #             check = 1
+    #         else:
+    #             point_y = -1000000  # self.calculate_pts(value)
+    #             check = 0
+    #         # FIND the left and right point of using cal_new_soc
+    #         self.second_curve_profit.append(point_y)
+    #         self.check_soc_curve.append(check)
 
+
+    # def para_cal(self):
+    #     for cur_idx in range(len(self.check_soc_curve)):
+    #         check = self.check_soc_curve[cur_idx]
+    #         value = self.second_curve_soc[cur_idx]
+    #         if check == 1:
+    #             point_y = self.calculate_new_soc(value)
+    #         if check == 0:
+    #             point_y = -1000000
+    #         self.second_curve_profit.append(point_y)
 
     def get_new_curve_step_1(self):
     #how can we get each new curve_point_X
         self.curve = self.old_curve
         self.second_curve_soc = self.curve.point_X
+        #para_second_curve_soc = self.second_curve_soc
 
     #get new curve_profit
         self.second_curve_profit = []
-        beta = 0.001
+        self.beta = 0.001
 
         # make sure its terminal soc works
         self.check_soc_curve = []
-    #here need parallel
+
         for value in self.second_curve_soc:
             distance = value - float(self.e_system.parameter['EEnd'])
-            left_cod = distance <= 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency'])-beta) )
-            right_cod = distance > 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency'])+beta) )
+            left_cod = distance <= 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency'])-self.beta) )
+            right_cod = distance > 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency'])+self.beta) )
             # left_value = (value - float(self.e_system.parameter['EEnd'])) - (
             #         (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (
             #         float(self.psh_system.parameter['GenEfficiency']) + beta))
@@ -223,15 +269,44 @@ class RL_Kernel():
             #         float(self.psh_system.parameter['PumpEfficiency']) - beta))
             if left_cod or right_cod:
             #if left_value < 0 and right_value > 0:
-                point_y = self.calculate_new_soc(value)
+                #point_y = self.calculate_new_soc(value)
                 check = 1
             else:
                 #point_y = 0
-                point_y = -1000000 #self.calculate_pts(value)
+                #point_y = -1000000 #self.calculate_pts(value)
                 check = 0
             #FIND the left and right point of using cal_new_soc
-            self.second_curve_profit.append(point_y)
+            #self.second_curve_profit.append(point_y)
             self.check_soc_curve.append(check)
+
+        # multiprossing here
+        #self.my_dict = multiprocessing.Manager().list()
+
+        #self.my_dict = [range(len(self.check_soc_curve))]
+
+        cores = multiprocessing.cpu_count()
+        pool = multiprocessing.Pool(processes=cores)
+
+        pool.map(para_cal, tasks)
+        self.para_cal()
+
+        for cur_idx in range(len(self.check_soc_curve)):
+            check = self.check_soc_curve[cur_idx]
+            value = self.second_curve_soc[cur_idx]
+            if check == 1:
+                point_y = self.calculate_new_soc(value)
+            if check == 0:
+                point_y = -1000000
+            self.second_curve_profit.append(point_y)
+
+
+
+
+
+
+
+
+
 
 
         #find the boundary point
@@ -414,4 +489,19 @@ test = RL_Kernel()
 test.main_function()
 
 
-
+# def fun(value):
+#     value_1 = value +1
+#     return value_1
+# tasks = [1,2,3]
+#
+#
+# cores = multiprocessing.cpu_count()
+# pool = multiprocessing.Pool(processes=cores)
+#
+#
+#
+# # pool.map(lambda x: print(x), tasks)
+#
+#
+#
+# print(pool.map(fun, tasks))
