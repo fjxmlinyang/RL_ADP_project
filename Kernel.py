@@ -98,7 +98,6 @@ class RL_Kernel():
 
         ##output curr cost
         self.curr_scenario_cost_total += self.curr_model.curr_cost
-        #
 
 
 
@@ -234,8 +233,8 @@ class RL_Kernel():
     #         self.check_soc_curve.append(check)
 
 
-    # def para_cal(self):
-    #     for cur_idx in range(len(self.check_soc_curve)):
+    # def para_cal(self, initial_soc):
+    #     for cur_idx in range(len(initial_soc)):
     #         check = self.check_soc_curve[cur_idx]
     #         value = self.second_curve_soc[cur_idx]
     #         if check == 1:
@@ -284,11 +283,11 @@ class RL_Kernel():
 
         #self.my_dict = [range(len(self.check_soc_curve))]
 
-        cores = multiprocessing.cpu_count()
-        pool = multiprocessing.Pool(processes=cores)
-
-        pool.map(para_cal, tasks)
-        self.para_cal()
+        # cores = multiprocessing.cpu_count()
+        # pool = multiprocessing.Pool(processes=cores)
+        #
+        # pool.map(para_cal, tasks)
+        # self.para_cal()
 
         for cur_idx in range(len(self.check_soc_curve)):
             check = self.check_soc_curve[cur_idx]

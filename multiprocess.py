@@ -23,44 +23,47 @@
 #     return  second_curve_profit
 #
 
-
+# only for like parameter multiprocess
 
 
 import multiprocessing as mp
 import gurobipy as gp
 from gurobipy import GRB
 import time
-
+from ModelSetUp import *
 
 class A():
 
     def solve_model(self, a):
-        with gp.Env() as env, gp.Model(env=env) as model:
+        self.a = a
+        with gp.Env() as env, gp.Model(env=env) as self.model:
         #with gp.Model as model:
-            self.add_Var(model)
+            self.add_Var()
             #add_var()
 
             time.sleep(5)
-            self.add_constraint(model)
+            self.add_constraint()
             # define model
 
-            model.optimize()
+            self.model.optimize()
+            self.optimal_profit.append(self.model.getObjective().getValue())
 
             # retrieve data from model
-    def add_Var(self, model):
-        self.x = model.addVar(vtype=GRB.BINARY, name="x")
-        self.y = model.addVar(vtype=GRB.BINARY, name="y")
-        self.z = model.addVar(vtype=GRB.BINARY, name="z")
+    def add_Var(self):
+        self.x = self.model.addVar(vtype=GRB.BINARY, name="x")
+        self.y = self.model.addVar(vtype=GRB.BINARY, name="y")
+        self.z = self.model.addVar(vtype=GRB.BINARY, name="z")
 
 
-    def add_constraint(self, model):
-        model.setObjective(self.x + self.y + 2 * self.z, GRB.MAXIMIZE)
-        model.addConstr(self.x + 2 * self.y + 3 * self.z <= a, "c0")
-        model.addConstr(self.x + self.y >= 1, "c1")
+    def add_constraint(self,):
+        self.model.setObjective(self.x + self.y + 2 * self.z, GRB.MAXIMIZE)
+        self.model.addConstr(self.x + 2 * self.y + 3 * self.z <= self.a, "c0")
+        self.model.addConstr(self.x + self.y >= 1, "c1")
 
 
     def cal(self, initial_soc):
     #if __name__ == '__main__':
+        self.optimal_profit = []
         with mp.Pool() as pool:
             pool.map(self.solve_model, initial_soc)
 
