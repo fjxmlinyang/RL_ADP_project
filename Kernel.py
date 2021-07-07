@@ -148,7 +148,6 @@ class RL_Kernel():
         e_system_2.parameter['EStart'] = initial_soc
         print('e_system_2.parameter is ' + str(e_system_2.parameter))
 
-
         if self.curr_time != 22:
             # lmp, time = t+1, scenario= n
             self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
@@ -173,7 +172,6 @@ class RL_Kernel():
         print(a)
         b = self.pre_curve.point_Y
         print(b)
-
 
         pre_model = RLSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model, model_1)
         pre_model.optimization_model_with_input()
