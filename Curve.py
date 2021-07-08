@@ -64,7 +64,7 @@ class Curve(object):
             self.segments[i][1] = value
         self.seg_update(point_1, point_2)
 
-    def input_curve(self, time , scenario ):
+    def input_curve(self, time, scenario):
         _str = str(time)
         filename =  self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
         df = pd.read_csv(filename)

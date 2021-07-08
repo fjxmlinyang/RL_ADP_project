@@ -1,47 +1,120 @@
-
-#
-#
-# def para_cal(check_soc_curve, second_curve_soc):
-#
-#
-#
-#
-#     def
-#     second_curve_profit = []
-#     for cur_idx in range(len(check_soc_curve)):
-#
-#         check = check_soc_curve[cur_idx]
-#         value = second_curve_soc[cur_idx]
-#         if check == 1:
-#             point_y = calculate_new_soc(value)
-#         if check == 0:
-#             point_y = -1000000
-#         second_curve_profit.append(point_y)
-#
-#
-#
-#     return  second_curve_profit
-#
-
-# only for like parameter multiprocess
-
-
 import multiprocessing as mp
 import gurobipy as gp
 from gurobipy import GRB
 import time
-from ModelSetUp import *
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
 
-class MultiRLSetUp():
 
-    def __init__(self):
-        #self.curr_model = curr_model
+class CurrModelPara():
+    def __init__(self, LAC_last_windows, probabilistic, RT_DA, date, LAC_bhour, scenario, current_stage):
+
+        # set the length of the rolling window
+        # LAC_window = 1
+
+        # indicate if the current window is the last window, default as 0
+        # LAC_last_windows = 0
+
+        # 0:apply the deterministic forecast, 1:apply the probabilistic forecast
+        #probabilistic = 0
+
+        # read time periods
+
+        self.LAC_last_windows = LAC_last_windows
+        self.RT_DA = RT_DA
+        self.probabilistic = probabilistic
+        self.date = date
+        self.LAC_bhour = LAC_bhour
+        self.scenario = scenario
+        self.current_stage = current_stage
+
+
+class Curve(object):
+    def __init__(self, numbers, lo_bd, up_bd):
+        self.numbers = numbers
+        self.up_bd = up_bd
+        self.lo_bd = lo_bd
+        self.steps = (up_bd - lo_bd) // numbers
+        self.filename_all = './Output_Curve'
+        self.seg_initial()
+        self.curve_initial()
+        self.output_initial_curve()
+
+    def seg_initial(self):
+        segments = []
+        for i in range(self.lo_bd, self.up_bd + self.steps, self.steps):
+            curr_step = i // self.steps
+            if i == self.lo_bd:
+                value = 50
+                self.intial_slope_set = value
+            else:
+                value = value - 0.02 * self.steps  # /10
+                # value = 50 - curr_step *0.4
+            # value = (100 - 2*i // self.steps)
+            segments.append([i, value])
+        self.segments = segments
+
+    def seg_update(self, point_1, point_2):
+        point_1_x = point_1[0]
+        point_1_y = point_1[1]
+        point_2_x = point_2[0]
+        point_2_y = point_2[1]
+        for i in range(self.numbers + 1):
+            curr = self.segments[i]
+            curr_x = curr[0]
+            curr_y = curr[1]
+            if curr_x <= point_1_x and curr_y <= point_1_y:
+                self.segments[i][1] = point_1_y
+            elif curr_x >= point_2_x and curr_y >= point_2_y:
+                self.segments[i][1] = point_2_y
+        self.curve_initial()  # 需要把point_X and point_Y更新下
+        print(self.segments)
+
+    def curve_initial(self):
+        df = pd.DataFrame(self.segments, columns=['x', 'y'])
+        self.curve_df = df
+        self.point_X = self.curve_df['x'].to_list()
+        self.point_Y = self.curve_df['y'].to_list()
+
+    def show_curve(self):
+        sns.set_theme(style="darkgrid")
+        sns.lineplot(x='x', y='y', data=self.curve_df)
+        plt.show()
+
+    def curve_update(self, new_curve_Y, point_1, point_2):
+        for i in range(len(new_curve_Y)):
+            value = new_curve_Y[i]
+            self.segments[i][1] = value
+        self.seg_update(point_1, point_2)
+
+    def input_curve(self, time, scenario):
+        _str = str(time)
+        filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
+        df = pd.read_csv(filename)
+        self.segments = df.values.tolist()
+        self.curve_initial()  # !!!别忘了
+        print(self.segments)
+
+    def output_initial_curve(self):
+        # output the initial curve
+        for curr_time in range(24):
+            _str = str(curr_time)
+            scenario = 0
+            filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
+            df = pd.DataFrame(self.segments, columns=['soc_segment', 'slope'])
+            df.to_csv(filename, index=False, header=True)
+
+
+class System():
+    def __init__(self, curr_model):
+        self.curr_model = curr_model
         self.Input_folder_parent = None
         self.filename = None
         self.Input_folder = None
         self.Output_folder = None
         self.parameter = {}
-        #this is for easy
+        # this is for easy
         if curr_model.current_stage == 'training_50':
             self.Input_all_total = './Input_Curve'
         if curr_model.current_stage == 'training_500':
@@ -55,6 +128,9 @@ class MultiRLSetUp():
         # ret = list(df[paranameter_name])
         ret = df[paranameter_name]
         self.parameter[in_model_name] = ret  # [0]
+
+
+class PshSystem(System):
 
     def set_up_parameter(self):
         ##这个是给标量 #how to input one by one?
@@ -73,102 +149,557 @@ class MultiRLSetUp():
         self.Input_folder = None
         self.filename = None
 
-    def solve_model(self, a): #this is main setup
+
+class ESystem(System):
+
+    def set_up_parameter(self):
+        ##这个是给标量 #how to input one by one?
+        self.Input_folder_parent = self.Input_all_total + '/PSH-Rolling Window'
+        self.Input_folder = self.Input_folder_parent + '/' + self.curr_model.date
+        self.filename = self.Input_folder + '/Reservoir.csv'
+        self.input_parameter('Min', 'EMin')
+        self.input_parameter('Max', 'EMax')
+        self.input_parameter('Name', 'EName')
+        self.input_parameter('End', 'EEnd')
+
+        self.Output_folder = './Output_Curve'
+        # here are for rolling model
+        # here we can set the benchmark?
+        if self.curr_model.LAC_bhour == 0:
+            self.input_parameter('Start', 'EStart')
+            self.e_start_folder = self.Output_folder
+        elif self.curr_model.LAC_last_windows:
+            self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(
+                self.curr_model.LAC_bhour - 1) + '.csv'
+            self.input_parameter('SOC', 'EStart')
+            self.e_start_folder = self.Output_folder
+        else:
+            self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(
+                self.curr_model.LAC_bhour - 1) + '.csv'
+            self.input_parameter('SOC', 'EStart')
+            self.e_start_folder = self.Output_folder
+        self.Input_folder = None
+        self.filename = None
+        self.Output_folder = None
+
+
+class LMP(System):
+
+    def set_up_parameter(self):
+        self.Input_folder_parent = self.Input_all_total + '/PSH-Rolling Window'
+        self.Input_folder = self.Input_folder_parent + '/' + self.curr_model.date
+        if self.curr_model.LAC_last_windows:
+            # filename = Input_folder + '\LMP_Hindsight' + '.csv'
+            # self.filename = self.Input_folder + '/prd_dataframe_wlen_24_'+ self.curr_model.date + '.csv'
+            self.filename = self.Input_folder + '/prd_dataframe_wlen_' + str(
+                24 - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '.csv'
+        else:
+            # filename = Input_folder+'\LMP_Scenarios_' + 'T' + str(LAC_bhour) +'_DA'+ '.csv'
+            if self.curr_model.probabilistic and self.Input_all_total == './Input_bootstrap':
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(
+                    24 - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '_550' + '.csv'
+            elif self.curr_model.probabilistic and self.Input_all_total == './Input_test':
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(
+                    24 - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '_550' + '.csv'
+            elif self.curr_model.probabilistic and self.Input_all_total == './Input_Curve':
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(
+                    24 - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '_50' + '.csv'
+            else:
+                self.filename = self.Input_folder + '/prd_dataframe_wlen_' + str(
+                    24 - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '.csv'
+
+        Data = pd.read_csv(self.filename)
+        df = pd.DataFrame(Data)
+        Column_name = list(Data.columns)
+        self.lmp_quantiles = []
+        self.lmp_scenarios = []
+        # DA_lmp=[]???
+        if self.curr_model.LAC_last_windows:
+            self.Nlmp_s = 1
+            # probability of each scenario is evenly distributed
+            self.lmp_quantiles.append(1.0 / self.Nlmp_s)
+            if self.curr_model.RT_DA == 1:
+                self.lmp_scenarios.append(list(df['RT_LMP']))
+            else:
+                self.lmp_scenarios.append(list(df['DA_LMP']))
+        else:
+            if self.curr_model.probabilistic:
+                self.Nlmp_s = len(Column_name)
+                for i in range(self.Nlmp_s):
+                    # probability of each scenario is evenly distributed
+                    self.lmp_quantiles.append(1.0 / self.Nlmp_s)
+                    ##only change here!!!
+                    self.lmp_scenarios.append(list(df[Column_name[self.curr_model.scenario]]))
+            else:
+                # for deterministic forecast, there is a single scenario
+                self.Nlmp_s = 1
+                self.lmp_quantiles.append(1.0 / self.Nlmp_s)
+                # deterministic forecast is the single point prediction
+                self.lmp_scenarios.append(list(df['prd']))
+
+        self.Input_folder = None
+        self.filename = None
+        self.Output_folder = None
+
+
+
+
+
+class OptModelSetUp():
+
+    def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
+        self.gur_model = gur_model
+        self.psh_system = psh_system
+        self.e_system = e_system
+        self.lmp = lmp
+        self.curve = curve
+        self.curr_model_para = curr_model_para
+        # self.pre_curve = pre_curve
+        # self.pre_lmp = pre_lmp
+########################################
+########################################
+#funtions for set up
+    def add_var_e(self, var_name):
+        return self.gur_model.addVars(self.e_system.parameter['EName'], ub=float('inf'),lb=-float('inf'), vtype="C", name=var_name)
+
+    def add_var_I(self, var_name):
+        return self.gur_model.addVars(self.e_system.parameter['EName'], vtype="B", name=var_name)
+
+    def add_var_psh(self, var_name):
+        return self.gur_model.addVars(self.psh_system.parameter['PSHName'], ub=float('inf'),lb=-float('inf'),vtype="C",name=var_name)
+
+
+
+    def add_constraint_rolling(self):
+        ## SOC0: e_0=E_start; loop from 0 to 22; e_1=e_0+psh1;....e_23=e_22+psh_23; when loop to 22; directly add e_23=E_end
+        for k in self.e_system.parameter['EName']:
+            print('Estart:', float(self.e_system.parameter['EStart']))
+            LHS = self.e[k] + grb.quicksum(self.psh_gen[j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
+                                          - grb.quicksum(self.psh_pump[j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
+            RHS = self.e_system.parameter['EStart']
+            print(LHS)
+            ###if we calculate the first one, we use 'SOC0', and the last we use 'End'; or we choose the SOC0 to "beginning", at the same time the last we use 'SOC'.
+            self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', k))
+
+
+    def add_constraint_epsh(self):
+        for j in self.psh_system.parameter['PSHName']:  # all are lists
+            self.gur_model.addConstr(self.psh_gen[j] <= self.psh_system.parameter['GenMax'], name='%s_%s' % ('psh_gen_max0', j))
+            self.gur_model.addConstr(self.psh_gen[j] >= self.psh_system.parameter['GenMin'], name='%s_%s' % ('psh_gen_min0', j))
+            self.gur_model.addConstr(self.psh_pump[j] <= self.psh_system.parameter['PumpMax'], name='%s_%s' % ('psh_pump_max0', j))
+            self.gur_model.addConstr(self.psh_pump[j] >= self.psh_system.parameter['PumpMin'], name='%s_%s' % ('psh_pump_min0', j))
+
+        for k in self.e_system.parameter['EName']:
+            self.gur_model.addConstr(self.e[k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max0', k))
+            self.gur_model.addConstr(self.e[k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0', k))
+
+
+    def add_constraint_curve(self):
+        for k in self.e_system.parameter['EName']:
+            _temp_sum = 0
+            for i in range(self.curve.numbers):
+                _temp_sum += self.soc[i][k]
+            LHS = self.e[k]
+            RHS = _temp_sum  # RHS=soc[0][k]+soc[1][k]+soc[2][k]+soc[3][k]+soc[4][k]
+            self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('curve', k))
+
+    def add_constraint_soc(self):
+    ### how to constraint for  d_1I_2 <= soc_1 <=d_1I_1?############################
+        for k in self.e_system.parameter['EName']:
+            for i in range(self.curve.numbers):
+                name_num = str(i + 1)
+                bench_num = i
+                if bench_num == 0:
+                    self.gur_model.addConstr(self.soc[bench_num][k] <= float(self.d[bench_num]) * self.I[bench_num][k],
+                                    name='%s_%s' % ('soc_' + name_num + '_max', k))
+                    self.gur_model.addConstr(float(self.d[bench_num]) * self.I[bench_num + 1][k] <= self.soc[bench_num][k],
+                                    name='%s_%s' % ('soc_' + name_num + '_min', k))
+                elif bench_num == self.curve.numbers - 1:
+                    self.gur_model.addConstr(self.soc[bench_num][k] <= float(self.d[bench_num]) * self.I[bench_num][k],
+                                    name='%s_%s' % ('soc_' + name_num + '_max', k))
+                    self.gur_model.addConstr(0 <= self.soc[bench_num][k], name='%s_%s' % ('soc_' + name_num + '_min', k))
+                else:
+                    self.gur_model.addConstr(self.soc[bench_num][k] <= float(self.d[bench_num]) * self.I[bench_num][k],
+                                    name='%s_%s' % ('soc_' + name_num + '_max', k))
+                    self.gur_model.addConstr(float(self.d[bench_num]) * self.I[bench_num + 1][k] <= self.soc[bench_num][k],
+                                    name='%s_%s' % ('soc_' + name_num + '_min', k))
+
+    def add_constraint_I(self):
+        for s in range(self.lmp.Nlmp_s):
+            for k in self.e_system.parameter['EName']:
+                for i in range(self.curve.numbers - 1):
+                    name_num = str(i + 1)
+                    name_num_next = str(i + 2)
+                    bench_num = i
+                    self.gur_model.addConstr(self.I[bench_num + 1][k] <= self.I[bench_num][k],
+                                    name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
+
+    def add_contraint_terminal(self):
+        beta = 0.001
+        for k in self.e_system.parameter['EName']:
+            curr_time = 23 - self.curr_model_para.LAC_bhour
+            LHS_1 = self.e[k] - self.e_system.parameter['EEnd']
+            RHS_1 = (curr_time   ) * self.psh_system.parameter['GenMax'] /(self.psh_system.parameter['GenEfficiency']+beta) # PSHmax_g[0] / PSHefficiency[0]
+            self.gur_model.addConstr(LHS_1 <= RHS_1, name='%s_%s' % ('final_upper', k))
+        for k in self.e_system.parameter['EName']:
+            curr_time = 23 - self.curr_model_para.LAC_bhour
+            LHS_2 = self.e[k] - self.e_system.parameter['EEnd']
+            RHS_2 = -(curr_time  ) * self.psh_system.parameter['PumpMax'] * (self.psh_system.parameter['PumpEfficiency']- beta) #PSHmax_p[0] * PSHefficiency[0]
+            self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
+
+##the following is for set upt elements of optimiation problems
+    def set_up_variable(self):
+    #add gen/pump
+        self.psh_gen = self.add_var_psh('psh_gen_main')
+        self.psh_pump = self.add_var_psh('psh_pump_main')
+
+    # add e
+        self.e = self.add_var_e('e_main')
+
+    #add soc and I
+        #self.len_var = self.curve.numbers #len(self.curve.point_X)-1
+        self.soc = []
+        self.I = []
+        for i in range(self.curve.numbers):
+        #for i in range(self.curve.numbers ):
+            name_num = str(i + 1)
+            self.soc.append(self.add_var_e('soc_' + name_num))
+            self.I.append(self.add_var_I('I_' + name_num))
+
+    #add d
+        d = []
+        for i in range(self.curve.numbers):
+        #for i in range(self.curve.numbers ):
+            d.append(self.curve.point_X[i+1] - self.curve.point_X[i])
+        self.d = d
+
+        self.gur_model.update()
+
+    def set_up_constraint(self):
+    # rolling constraint E_start = E_end +pump + gen
+        self.add_constraint_rolling()
+    # upper and lower constraint
+        self.add_constraint_epsh()
+    # curve constraint
+        self.add_constraint_curve()
+    # constraint for  d_1I_2 <= soc_1 <=d_1I_1?##
+        self.add_constraint_soc()
+    # constraint for I_1<=I_2<=I_3
+        self.add_constraint_I()
+    # terminal constraint
+        self.add_contraint_terminal()
+
+        self.gur_model.update()
+
+    def set_up_object(self):
+        self.profit_max = []
+        for j in self.psh_system.parameter['PSHName']:
+            self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+        for k in self.e_system.parameter['EName']:
+            for i in range(self.curve.numbers):
+                bench_num = i
+                #self.profit_max.append(self.curve.point_Y[bench_num] * self.soc[bench_num][k])
+                #curve如果是[soc=0, slope=10],[soc=30,slope=20], 从0-30,slope为30
+                self.profit_max.append(self.curve.point_Y[bench_num + 1] * self.soc[bench_num ][k])
+        print(self.profit_max)
+        self.obj = quicksum(self.profit_max)
+
+########################################
+########################################
+#functions for solve and output results
+    def get_optimal_soc(self):
+        self.optimal_soc = []
+        _temp = list(self.e_system.parameter['EName'])[0]
+        for v in [v for v in self.gur_model.getVars() if (_temp in v.Varname and 'soc' in v.Varname)]:
+            soc = v.X
+            self.optimal_soc.append(soc)
+        self.optimal_soc_sum = sum(self.optimal_soc)
+        #a = self.optimal_soc_sum
+        #print(a)
+
+
+    def get_optimal_gen_pump(self):
+    #get optimal_psh_gen/pump
+        self.optimal_psh_pump = []
+        self.optimal_psh_gen = []
+        for v in [v for v in self.gur_model.getVars() if 'psh_gen_main' in v.Varname]:
+            psh = v.X
+            self.optimal_psh_gen.append(psh)
+        self.optimal_psh_gen_sum = sum(self.optimal_psh_gen)
+        for v in [v for v in self.gur_model.getVars() if 'psh_pump_main' in v.Varname]:
+            psh = v.X
+            #psh0.append(-psh)
+            self.optimal_psh_pump.append(psh)
+        self.optimal_psh_pump_sum = sum(self.optimal_psh_pump)
+######################################################
+#####################################################
+    def get_optimal_profit(self):
+    #get optimal profit
+        #self.optimal_profit = self.calculate_pts(self.optimal_soc_sum) ##注意这里
+        obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
+        self.optimal_profit = obj.getValue()
+
+    def get_curr_cost(self):
+        #put the soc_sum in, we get the profit
+        point_profit = []
+        for s in range(self.lmp.Nlmp_s):
+            p_s = self.lmp.lmp_quantiles[s]
+            for j in self.psh_system.parameter['PSHName']:
+                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
+        # for j in self.psh_system.parameter['PSHName']:
+        #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+
+        self.curr_cost = sum(point_profit)
+
+
+    def output_optimal(self):
+    #output the e for next time
+        filename = self.e_system.e_start_folder + '/LAC_Solution_System_SOC_'+ str(self.curr_model_para.LAC_bhour) + '.csv'
+
+        with open(filename, 'w') as wf:
+            wf.write('Num_Period,Reservoir_Name,SOC\n')
+            _temp = list(self.e_system.parameter['EName'])[0]
+            for v in [v for v in self.gur_model.getVars() if (_temp in v.Varname and 'e_main' in v.Varname)]:
+                self.optimal_e = v.X
+                time = 'T' + str(self.curr_model_para.LAC_bhour)
+                name = _temp
+                st = time + ',' + '%s,%.1f' % (name, self.optimal_e) + '\n'
+                wf.write(st)
+
+
+
+
+
+
+class RLSetUp(OptModelSetUp):
+#psh_system, e_system, lmp, curve, curr_model_para, gur_model
+
+
+    def set_up_main(self):
+        self.set_up_variable()
+        self.set_up_constraint()
+        self.set_up_object()
+
+    def solve_model_main(self):
+        self.gur_model.setObjective(self.obj, GRB.MAXIMIZE)
+        self.gur_model.setParam("MIPGap", 0.0001)
+        self.gur_model.optimize()
+
+    def get_optimal_main(self):
+        # get optimal soc
+        self.get_optimal_soc()
+        self.get_optimal_gen_pump()
+        self.get_optimal_profit()
+        self.get_curr_cost()
+        self.output_optimal()
+
+
+
+
+##important function
+    def optimization_model(self):
+        self.set_up_main()
+        self.solve_model_main()
+        #deal with optimal solution: store and output
+        self.get_optimal_main()
+        ###update curve and output curve
+
+        #self.get_new_curve_main()
+
+
+
+    def optimization_model_with_input(self):#SOC_initial
+        self.set_up_main()
+        #self.psh_system.parameter['EStart'] = 0#SOC_initial
+        self.solve_model_main()
+        #deal with optimal solution: store and output
+        #self.get_optimal_main()
+        self.get_optimal_soc()
+        self.get_optimal_gen_pump()
+        self.get_optimal_profit()
+        self.output_optimal()
+
+    def x_to_soc(self, point_X):
+        # change soc_sum to soc_1 + soc_2 + soc_3
+        turn_1 = point_X // self.curve.steps
+        rest = point_X % self.curve.steps
+        point_x_soc = []
+        for i in range(self.curve.numbers):
+            if turn_1 > 0:
+                point_x_soc.append(self.curve.steps)
+                turn_1 -= 1
+            elif turn_1 == 0:
+                point_x_soc.append(rest)
+                turn_1 -= 1
+            else:
+                point_x_soc.append(0)
+        return point_x_soc
+
+
+
+
+
+
+
+
+#好，这里开始是把其写成multiprocessing
+
+
+
+class MultiRLSetUp():
+
+    def __init__(self):
+        self.alpha = 0.8  # 0.2
+        self.date = 'March 07 2019'
+        self.LAC_last_windows = 0  # 1#0
+        self.probabilistic = 1  # 0#1
+        self.RT_DA = 1  # 0#1
+        self.curr_time = 0
+        self.curr_scenario = 1
+        self.current_stage = 'training_500'
+
+    def calculate_new_soc(self, initial_soc):
+        pre_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+                                  self.curr_scenario, self.current_stage)
+        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+
+        psh_system_2 = PshSystem(pre_model)
+        psh_system_2.set_up_parameter()
+
+
+        e_system_2 = ESystem(pre_model)
+        e_system_2.set_up_parameter()
+        e_system_2.parameter['EStart'] = initial_soc
+        print('e_system_2.parameter is ' + str(e_system_2.parameter))
+
+        if self.curr_time != 22:
+            # lmp, time = t+1, scenario= n
+            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
+                                       self.curr_scenario, self.current_stage)
+            self.prev_lmp = LMP(self.prev_model)
+            self.prev_lmp.set_up_parameter()
+            # curve, time = t+1, scenario= n-1
+            self.pre_curve = Curve(100, 0, 3000)
+            self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
+        elif self.curr_time == 22:
+            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+                                       self.curr_scenario, self.current_stage)
+            self.prev_lmp = LMP(self.prev_model)
+            self.prev_lmp.set_up_parameter()
+
+            self.pre_curve = Curve(100, 0, 3000)
+            self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
+
+        model_1 = Model('DAMarket')
+        #ADP_train_model_para = pre_model
+        a = self.prev_lmp.lmp_scenarios
+        print(a)
+        b = self.pre_curve.point_Y
+        print(b)
+
+        pre_model = RLSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model, model_1)
+        pre_model.optimization_model_with_input()
+        rt = pre_model.optimal_profit
+
+    def MainSol(self, a): #this is calculate_new_soc
         self.a = a
         with gp.Env() as env, gp.Model(env=env) as self.model:
         #with gp.Model as model:
-            self.add_Var()
+
+            self.ReadVar()
+
+            self.AddVar()
             #add_var()
 
             time.sleep(5)
-            self.add_constraint()
+            self.AddConstraint()
             # define model
 
             self.model.optimize()
             self.optimal_profit.append(self.model.getObjective().getValue())
 
-            # retrieve data from model
-    def add_Var(self):
-        self.x = self.model.addVar(vtype=GRB.BINARY, name="x")
-        self.y = self.model.addVar(vtype=GRB.BINARY, name="y")
-        self.z = self.model.addVar(vtype=GRB.BINARY, name="z")
+    def get_new_curve_step_1(self, initial_soc):
+    #how can we get each new curve_point_X
 
-    def add_constraint(self,):
-        self.model.setObjective(self.x + self.y + 2 * self.z, GRB.MAXIMIZE)
-        self.model.addConstr(self.x + 2 * self.y + 3 * self.z <= self.a, "c0")
-        self.model.addConstr(self.x + self.y >= 1, "c1")
+    #get new curve_profit
+        self.second_curve_profit = []
+        beta = 0.001
 
-    def cal(self, initial_soc): #this is main calculation
+    # make sure its terminal soc works
+        self.check_soc_curve = []
+    #here need parallel
+        #for value in self.second_curve_soc:
+        distance = initial_soc - float(self.e_system_2.parameter['EEnd'])
+        left_cod = distance <= 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system_2.parameter['PumpMax']) * (float(self.psh_system_2.parameter['PumpEfficiency'])-beta) )
+        right_cod = distance > 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system_2.parameter['GenMax']) / (float(self.psh_system_2.parameter['GenEfficiency'])+beta) )
+        if left_cod or right_cod:
+        #if left_value < 0 and right_value > 0:
+            point_y = self.calculate_new_soc(initial_soc)
+            check = 1
+        else:
+            #point_y = 0
+            point_y = -1000000 #self.calculate_pts(value)
+            check = 0
+        #FIND the left and right point of using cal_new_soc
+        self.second_curve_profit.append(point_y)
+        self.check_soc_curve.append(check)
+
+
+    def CalOpt(self, initial_soc): #this is get_new_curve_step_1
     #if __name__ == '__main__':
         self.optimal_profit = []
+        self.initial_soc = initial_soc
         with mp.Pool() as pool:
-            pool.map(self.solve_model, initial_soc)
-
-
-
-# a = A()
-# initial_soc = [4, 5, 6, 7, 8, 9, 10, 11]
-# a.cal(initial_soc)
-
-
-# def solve_model(a):
-#     with gp.Env() as env, gp.Model(env=env) as model:
-#         x = model.addVar(vtype=GRB.BINARY, name="x")
-#         y = model.addVar(vtype=GRB.BINARY, name="y")
-#         z = model.addVar(vtype=GRB.BINARY, name="z")
-#         # add_var()
-#
-#         time.sleep(5)
-#         model.setObjective(x + y + 2 * z, GRB.MAXIMIZE)
-#         model.addConstr(x + 2 * y + 3 * z <= a, "c0")
-#         model.addConstr(x + y >= 1, "c1")
-#         # define model
-#
-#         model.optimize()
-#
-#         # retrieve data from model
-#
-#
-#
-# # if __name__ == '__main__':
-# time_1 = time.time()
-# with mp.Pool() as pool:
-#     pool.map(solve_model, [4, 5, 6, 7, 8, 9, 10, 11])
-# time_2 = time.time()
-# print(time_2 - time_1)
+            pool.map(self.MainSol, self.initial_soc)
 
 
 
 
 
 
+    #
+    # def MainSol(self, a): #this is main setup
+    #     self.a = a
+    #     with gp.Env() as env, gp.Model(env=env) as self.model:
+    #     #with gp.Model as model:
+    #
+    #         self.ReadVar()
+    #
+    #         self.AddVar()
+    #         #add_var()
+    #
+    #         time.sleep(5)
+    #         self.AddConstraint()
+    #         # define model
+    #
+    #         self.model.optimize()
+    #         self.optimal_profit.append(self.model.getObjective().getValue())
+    #
+    #         # retrieve data from model
+    # def ReadVar(self):
+    #     etst= 0
+    #
+    #
+    # def AddVar(self):
+    #     self.x = self.model.addVar(vtype=GRB.BINARY, name="x")
+    #     self.y = self.model.addVar(vtype=GRB.BINARY, name="y")
+    #     self.z = self.model.addVar(vtype=GRB.BINARY, name="z")
+    #
+    # def AddConstraint(self):
+    #
+    #     self.model.setObjective(self.x + self.y + 2 * self.z, GRB.MAXIMIZE)
+    #     self.model.addConstr(self.x + 2 * self.y + 3 * self.z <= self.a, "c0")
+    #     self.model.addConstr(self.x + self.y >= 1, "c1")
+    #
+    #
+    #
+    #
+    # def CalOpt(self, initial_soc): #this is main calculation
+    # #if __name__ == '__main__':
+    #     self.optimal_profit = []
+    #     self.initial_soc = initial_soc
+    #     with mp.Pool() as pool:
+    #         pool.map(self.MainSol, self.initial_soc)
+    #
 
 
-
-
-
-
-
-#
-# def solve_model(a):
-#
-#     with gp.Env() as env, gp.Model(env=env) as model:
-#         x = model.addVar(vtype=GRB.BINARY, name="x")
-#         y = model.addVar(vtype=GRB.BINARY, name="y")
-#         z = model.addVar(vtype=GRB.BINARY, name="z")
-#         add_var()
-#         time_1 = time.time()
-#         time.sleep(5)
-#         model.setObjective(x + y + 2 * z, GRB.MAXIMIZE)
-#         model.addConstr(x + 2 * y + 3 * z <= a, "c0")
-#         model.addConstr(x + y >= 1, "c1")
-#         # define model
-#
-#         model.optimize()
-#         time_2 = time.time()
-#         # retrieve data from model
-#         print(time_2-time_1)
-#
-# #if __name__ == '__main__':
-# with mp.Pool() as pool:
-#     pool.map(solve_model, [4, 5, 6])

@@ -68,6 +68,7 @@ def Any_Sprice_E_curve_method(LAC_bhour, LAC_last_windows, Input_folder, Output_
     Emax = df['Max']
     Ename = df['Name']
     Edayend= float(df['End'])
+
 ############################################################################
 
 
