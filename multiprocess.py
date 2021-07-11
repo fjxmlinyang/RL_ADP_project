@@ -559,15 +559,15 @@ class MultiRLSetUp():
         self.current_stage = 'training_500'
 
     def calculate_new_soc(self, initial_soc):
-        pre_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+        pre_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
                                   self.curr_scenario, self.current_stage)
         # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
-        psh_system_2 = PshSystem(pre_model)
+        psh_system_2 = PshSystem(pre_model_para)
         psh_system_2.set_up_parameter()
 
 
-        e_system_2 = ESystem(pre_model)
+        e_system_2 = ESystem(pre_model_para)
         e_system_2.set_up_parameter()
         e_system_2.parameter['EStart'] = initial_soc
         print('e_system_2.parameter is ' + str(e_system_2.parameter))
@@ -591,13 +591,12 @@ class MultiRLSetUp():
             self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
 
         model_1 = Model('DAMarket')
-        #ADP_train_model_para = pre_model
         a = self.prev_lmp.lmp_scenarios
         print(a)
         b = self.pre_curve.point_Y
         print(b)
 
-        pre_model = RLSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model, model_1)
+        pre_model = RLSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model_para, model_1)
         pre_model.optimization_model_with_input()
         rt = pre_model.optimal_profit
 
