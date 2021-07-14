@@ -17,17 +17,17 @@ class RL_Kernel():
         #self.action = None
         self.alpha = 0.8#0.2
         self.date = 'March 07 2019'
-        self.LAC_last_windows = 1#0
-        self.probabilistic = 0#1
-        self.RT_DA = 0#1
+        self.LAC_last_windows = 0#1#0
+        self.probabilistic = 1#0#1
+        self.RT_DA = 1#0#1
         self.curr_time = 0
         self.curr_scenario = 1
-        self.current_stage ='training_50' #'training_500'
+        self.current_stage ='training_500' #'training_500'
 
     def main_function(self):
         self.Curr_Scenario_Cost_Total = []
         self.start = 1
-        self.end = 50
+        self.end = 500
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []

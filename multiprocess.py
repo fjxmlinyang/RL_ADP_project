@@ -32,6 +32,11 @@ class CurrModelPara():
 
 class Curve(object):
     def __init__(self, numbers, lo_bd, up_bd):
+        '''
+        :param numbers: numbers of the segments
+        :param lo_bd: the lower bound of the curve
+        :param up_bd: the upper bound of the curve
+        '''
         self.numbers = numbers
         self.up_bd = up_bd
         self.lo_bd = lo_bd
@@ -42,6 +47,9 @@ class Curve(object):
         self.output_initial_curve()
 
     def seg_initial(self):
+        '''
+        :return: curve with initial value
+        '''
         segments = []
         for i in range(self.lo_bd, self.up_bd + self.steps, self.steps):
             curr_step = i // self.steps
@@ -56,6 +64,11 @@ class Curve(object):
         self.segments = segments
 
     def seg_update(self, point_1, point_2):
+        '''
+        :param point_1:  update point one
+        :param point_2:  update point two
+        :return:
+        '''
         point_1_x = point_1[0]
         point_1_y = point_1[1]
         point_2_x = point_2[0]
@@ -72,23 +85,40 @@ class Curve(object):
         print(self.segments)
 
     def curve_initial(self):
+        '''
+        :return: list the x value and y value of the curve
+        '''
         df = pd.DataFrame(self.segments, columns=['x', 'y'])
         self.curve_df = df
         self.point_X = self.curve_df['x'].to_list()
         self.point_Y = self.curve_df['y'].to_list()
 
     def show_curve(self):
+        '''
+        :return: print the curve
+        '''
         sns.set_theme(style="darkgrid")
         sns.lineplot(x='x', y='y', data=self.curve_df)
         plt.show()
 
     def curve_update(self, new_curve_Y, point_1, point_2):
+        '''
+        :param new_curve_Y: the curve for update
+        :param point_1: update point 1
+        :param point_2: update point 2
+        :return: update curve
+        '''
         for i in range(len(new_curve_Y)):
             value = new_curve_Y[i]
             self.segments[i][1] = value
         self.seg_update(point_1, point_2)
 
     def input_curve(self, time, scenario):
+        '''
+        :param time:  hours
+        :param scenario: scenarios
+        :return: read the curve in folder
+        '''
         _str = str(time)
         filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
         df = pd.read_csv(filename)
@@ -268,8 +298,6 @@ class OptModelSetUp():
     def add_var_psh(self, var_name):
         return self.gur_model.addVars(self.psh_system.parameter['PSHName'], ub=float('inf'),lb=-float('inf'),vtype="C",name=var_name)
 
-
-
     def add_constraint_rolling(self):
         ## SOC0: e_0=E_start; loop from 0 to 22; e_1=e_0+psh1;....e_23=e_22+psh_23; when loop to 22; directly add e_23=E_end
         for k in self.e_system.parameter['EName']:
@@ -292,7 +320,6 @@ class OptModelSetUp():
         for k in self.e_system.parameter['EName']:
             self.gur_model.addConstr(self.e[k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max0', k))
             self.gur_model.addConstr(self.e[k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0', k))
-
 
     def add_constraint_curve(self):
         for k in self.e_system.parameter['EName']:
@@ -334,7 +361,7 @@ class OptModelSetUp():
                     self.gur_model.addConstr(self.I[bench_num + 1][k] <= self.I[bench_num][k],
                                     name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
 
-    def add_contraint_terminal(self):
+    def add_constraint_terminal(self):
         beta = 0.001
         for k in self.e_system.parameter['EName']:
             curr_time = 23 - self.curr_model_para.LAC_bhour
@@ -387,7 +414,7 @@ class OptModelSetUp():
     # constraint for I_1<=I_2<=I_3
         self.add_constraint_I()
     # terminal constraint
-        self.add_contraint_terminal()
+        self.add_constraint_terminal()
 
         self.gur_model.update()
 
