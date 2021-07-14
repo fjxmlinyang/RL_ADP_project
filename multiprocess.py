@@ -278,6 +278,7 @@ class LMP(System):
 class OptModelSetUp():
 
     def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
+        with gp.Env() as env, gp.Model(env=env) as self.gur_model:
         self.gur_model = gur_model
         self.psh_system = psh_system
         self.e_system = e_system
@@ -288,7 +289,7 @@ class OptModelSetUp():
         # self.pre_lmp = pre_lmp
 ########################################
 ########################################
-#funtions for set up
+# funtions for set up
     def add_var_e(self, var_name):
         return self.gur_model.addVars(self.e_system.parameter['EName'], ub=float('inf'),lb=-float('inf'), vtype="C", name=var_name)
 
@@ -374,7 +375,7 @@ class OptModelSetUp():
             RHS_2 = -(curr_time  ) * self.psh_system.parameter['PumpMax'] * (self.psh_system.parameter['PumpEfficiency']- beta) #PSHmax_p[0] * PSHefficiency[0]
             self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
 
-##the following is for set upt elements of optimiation problems
+# the following is for set upt elements of optimiation problems
     def set_up_variable(self):
     #add gen/pump
         self.psh_gen = self.add_var_psh('psh_gen_main')
@@ -433,8 +434,9 @@ class OptModelSetUp():
 
 ########################################
 ########################################
-#functions for solve and output results
+# functions for solve and output results
     def get_optimal_soc(self):
+
         self.optimal_soc = []
         _temp = list(self.e_system.parameter['EName'])[0]
         for v in [v for v in self.gur_model.getVars() if (_temp in v.Varname and 'soc' in v.Varname)]:
@@ -463,6 +465,8 @@ class OptModelSetUp():
     def get_optimal_profit(self):
     #get optimal profit
         #self.optimal_profit = self.calculate_pts(self.optimal_soc_sum) ##注意这里
+        #self.a = a
+        #with gp.Env() as env, gp.Model(env=env) as self.gur_model:
         obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
         self.optimal_profit = obj.getValue()
 
@@ -512,13 +516,21 @@ class RLSetUp(OptModelSetUp):
         self.gur_model.setParam("MIPGap", 0.0001)
         self.gur_model.optimize()
 
-    def get_optimal_main(self):
+    def get_optimal_main(self, initial_soc):
         # get optimal soc
         self.get_optimal_soc()
         self.get_optimal_gen_pump()
-        self.get_optimal_profit()
+        # with mp.Pool() as pool:
+        #     pool.map(self.get_optimal_profit, initial_soc)
+        #self.get_optimal_profit()
         self.get_curr_cost()
         self.output_optimal()
+    # def CalOpt(self, initial_soc): #this is get_new_curve_step_1
+    # #if __name__ == '__main__':
+    #     self.optimal_profit = []
+    #     self.initial_soc = initial_soc
+    #     with mp.Pool() as pool:
+    #         pool.map(self.MainSol, self.initial_soc)
 
 
 
@@ -563,6 +575,15 @@ class RLSetUp(OptModelSetUp):
         return point_x_soc
 
 
+    def CalOpt(self, initial_soc): #this is get_new_curve_step_1
+    #if __name__ == '__main__':
+        self.optimal_profit = []
+        self.initial_soc = initial_soc
+        with mp.Pool() as pool:
+            pool.map(self.MainSol, self.initial_soc)
+
+
+
 
 
 
@@ -573,110 +594,110 @@ class RLSetUp(OptModelSetUp):
 
 
 
-class MultiRLSetUp():
+# class MultiRLSetUp():
 
-    def __init__(self):
-        self.alpha = 0.8  # 0.2
-        self.date = 'March 07 2019'
-        self.LAC_last_windows = 0  # 1#0
-        self.probabilistic = 1  # 0#1
-        self.RT_DA = 1  # 0#1
-        self.curr_time = 0
-        self.curr_scenario = 1
-        self.current_stage = 'training_500'
+#     def __init__(self):
+#         self.alpha = 0.8  # 0.2
+#         self.date = 'March 07 2019'
+#         self.LAC_last_windows = 0  # 1#0
+#         self.probabilistic = 1  # 0#1
+#         self.RT_DA = 1  # 0#1
+#         self.curr_time = 0
+#         self.curr_scenario = 1
+#         self.current_stage = 'training_500'
 
-    def calculate_new_soc(self, initial_soc):
-        pre_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                  self.curr_scenario, self.current_stage)
-        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+#     def calculate_new_soc(self, initial_soc):
+#         pre_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+#                                   self.curr_scenario, self.current_stage)
+#         # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
-        psh_system_2 = PshSystem(pre_model_para)
-        psh_system_2.set_up_parameter()
-
-
-        e_system_2 = ESystem(pre_model_para)
-        e_system_2.set_up_parameter()
-        e_system_2.parameter['EStart'] = initial_soc
-        print('e_system_2.parameter is ' + str(e_system_2.parameter))
-
-        if self.curr_time != 22:
-            # lmp, time = t+1, scenario= n
-            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
-                                       self.curr_scenario, self.current_stage)
-            self.prev_lmp = LMP(self.prev_model)
-            self.prev_lmp.set_up_parameter()
-            # curve, time = t+1, scenario= n-1
-            self.pre_curve = Curve(100, 0, 3000)
-            self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
-        elif self.curr_time == 22:
-            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                       self.curr_scenario, self.current_stage)
-            self.prev_lmp = LMP(self.prev_model)
-            self.prev_lmp.set_up_parameter()
-
-            self.pre_curve = Curve(100, 0, 3000)
-            self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
-
-        model_1 = Model('DAMarket')
-        a = self.prev_lmp.lmp_scenarios
-        print(a)
-        b = self.pre_curve.point_Y
-        print(b)
-
-        pre_model = RLSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model_para, model_1)
-        pre_model.optimization_model_with_input()
-        rt = pre_model.optimal_profit
-
-    def MainSol(self, a): #this is calculate_new_soc
-        self.a = a
-        with gp.Env() as env, gp.Model(env=env) as self.model:
-        #with gp.Model as model:
-
-            self.ReadVar()
-
-            self.AddVar()
-            #add_var()
-
-            time.sleep(5)
-            self.AddConstraint()
-            # define model
-
-            self.model.optimize()
-            self.optimal_profit.append(self.model.getObjective().getValue())
-
-    def get_new_curve_step_1(self, initial_soc):
-    #how can we get each new curve_point_X
-
-    #get new curve_profit
-        self.second_curve_profit = []
-        beta = 0.001
-
-    # make sure its terminal soc works
-        self.check_soc_curve = []
-    #here need parallel
-        #for value in self.second_curve_soc:
-        distance = initial_soc - float(self.e_system_2.parameter['EEnd'])
-        left_cod = distance <= 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system_2.parameter['PumpMax']) * (float(self.psh_system_2.parameter['PumpEfficiency'])-beta) )
-        right_cod = distance > 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system_2.parameter['GenMax']) / (float(self.psh_system_2.parameter['GenEfficiency'])+beta) )
-        if left_cod or right_cod:
-        #if left_value < 0 and right_value > 0:
-            point_y = self.calculate_new_soc(initial_soc)
-            check = 1
-        else:
-            #point_y = 0
-            point_y = -1000000 #self.calculate_pts(value)
-            check = 0
-        #FIND the left and right point of using cal_new_soc
-        self.second_curve_profit.append(point_y)
-        self.check_soc_curve.append(check)
+#         psh_system_2 = PshSystem(pre_model_para)
+#         psh_system_2.set_up_parameter()
 
 
-    def CalOpt(self, initial_soc): #this is get_new_curve_step_1
-    #if __name__ == '__main__':
-        self.optimal_profit = []
-        self.initial_soc = initial_soc
-        with mp.Pool() as pool:
-            pool.map(self.MainSol, self.initial_soc)
+#         e_system_2 = ESystem(pre_model_para)
+#         e_system_2.set_up_parameter()
+#         e_system_2.parameter['EStart'] = initial_soc
+#         print('e_system_2.parameter is ' + str(e_system_2.parameter))
+
+#         if self.curr_time != 22:
+#             # lmp, time = t+1, scenario= n
+#             self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
+#                                        self.curr_scenario, self.current_stage)
+#             self.prev_lmp = LMP(self.prev_model)
+#             self.prev_lmp.set_up_parameter()
+#             # curve, time = t+1, scenario= n-1
+#             self.pre_curve = Curve(100, 0, 3000)
+#             self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
+#         elif self.curr_time == 22:
+#             self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+#                                        self.curr_scenario, self.current_stage)
+#             self.prev_lmp = LMP(self.prev_model)
+#             self.prev_lmp.set_up_parameter()
+
+#             self.pre_curve = Curve(100, 0, 3000)
+#             self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
+
+#         model_1 = Model('DAMarket')
+#         a = self.prev_lmp.lmp_scenarios
+#         print(a)
+#         b = self.pre_curve.point_Y
+#         print(b)
+
+#         pre_model = RLSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model_para, model_1)
+#         pre_model.optimization_model_with_input()
+#         rt = pre_model.optimal_profit
+
+#     def MainSol(self, a): #this is calculate_new_soc
+#         self.a = a
+#         with gp.Env() as env, gp.Model(env=env) as self.model:
+#         #with gp.Model as model:
+
+#             self.ReadVar()
+
+#             self.AddVar()
+#             #add_var()
+
+#             time.sleep(5)
+#             self.AddConstraint()
+#             # define model
+
+#             self.model.optimize()
+#             self.optimal_profit.append(self.model.getObjective().getValue())
+
+#     def get_new_curve_step_1(self, initial_soc):
+#     #how can we get each new curve_point_X
+
+#     #get new curve_profit
+#         self.second_curve_profit = []
+#         beta = 0.001
+
+#     # make sure its terminal soc works
+#         self.check_soc_curve = []
+#     #here need parallel
+#         #for value in self.second_curve_soc:
+#         distance = initial_soc - float(self.e_system_2.parameter['EEnd'])
+#         left_cod = distance <= 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system_2.parameter['PumpMax']) * (float(self.psh_system_2.parameter['PumpEfficiency'])-beta) )
+#         right_cod = distance > 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system_2.parameter['GenMax']) / (float(self.psh_system_2.parameter['GenEfficiency'])+beta) )
+#         if left_cod or right_cod:
+#         #if left_value < 0 and right_value > 0:
+#             point_y = self.calculate_new_soc(initial_soc)
+#             check = 1
+#         else:
+#             #point_y = 0
+#             point_y = -1000000 #self.calculate_pts(value)
+#             check = 0
+#         #FIND the left and right point of using cal_new_soc
+#         self.second_curve_profit.append(point_y)
+#         self.check_soc_curve.append(check)
+
+
+#     def CalOpt(self, initial_soc): #this is get_new_curve_step_1
+#     #if __name__ == '__main__':
+#         self.optimal_profit = []
+#         self.initial_soc = initial_soc
+#         with mp.Pool() as pool:
+#             pool.map(self.MainSol, self.initial_soc)
 
 
 
