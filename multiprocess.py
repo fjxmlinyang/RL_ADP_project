@@ -277,16 +277,71 @@ class LMP(System):
 
 class OptModelSetUp():
 
-    def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
-        self.gur_model = gur_model
-        self.psh_system = psh_system
-        self.e_system = e_system
-        self.lmp = lmp
-        self.curve = curve
-        self.curr_model_para = curr_model_para
+    # def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
+        # self.gur_model = gur_model
+        # self.psh_system = psh_system
+        # self.e_system = e_system
+        # self.lmp = lmp
+        # self.curve = curve
+        # self.curr_model_para = curr_model_para
+    def __init__(self):
+        self.gur_model = None
+        self.psh_system = None
+        self.e_system = None
+        self.lmp = None
+        self.curve = None
+        self.curr_model_para = None
         # self.pre_curve = pre_curve
         # self.pre_lmp = pre_lmp
 ########################################
+
+    def SetUpMain(self, initial_soc):
+        self.alpha = 0.8  # 0.2
+        self.date = 'March 07 2019'
+        self.LAC_last_windows = 0  # 1#0
+        self.probabilistic = 1  # 0#1
+        self.RT_DA = 1  # 0#1
+        self.curr_time = 0
+        self.curr_scenario = 1
+        self.current_stage = 'training_500'
+        pre_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+                                  self.curr_scenario, self.current_stage)
+        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+
+        self.psh_system = PshSystem(pre_model_para)
+        self.psh_system.set_up_parameter()
+
+
+        self.e_system = ESystem(pre_model_para)
+        self.e_system.set_up_parameter()
+        e_system_2.parameter['EStart'] = initial_soc
+ 
+        if self.curr_time != 22:
+            # lmp, time = t+1, scenario= n
+            prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
+                                       self.curr_scenario, self.current_stage)
+            self.lmp = LMP(prev_model)
+            self.lmp.set_up_parameter()
+            # curve, time = t+1, scenario= n-1
+            self.curve = Curve(100, 0, 3000)
+            self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
+        elif self.curr_time == 22:
+            prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+                                       self.curr_scenario, self.current_stage)
+            self.lmp = LMP(prev_model)
+            self.lmp.set_up_parameter()
+
+            self.curve = Curve(100, 0, 3000)
+            self.curve.input_curve(self.curr_time, self.curr_scenario - 1)
+
+        model_1 = Model('DAMarket')
+        a = self.prev_lmp.lmp_scenarios
+        print(a)
+        b = self.pre_curve.point_Y
+        print(b)
+        MultiRL = OptModelSetUp(self.psh_system, self.e_system, self.mp, self.curve, pre_model_para, model_1)
+
+
 ########################################
 # funtions for set up
     def add_var_e(self, var_name):
@@ -531,11 +586,24 @@ class OptModelSetUp():
 
 
 ##important function
+    # def optimization_model_with_input(self, initial_soc):#SOC_initial
+    #     self.initial_soc = initial_soc
+    #     with gp.Env() as env, gp.Model(env=env) as self.gur_model:
+    #         #self.set_up_main()
+    #         self.set_up_constraint()
+    #         self.set_up_variable()
+    #         self.set_up_object()
+    #         self.psh_system.parameter['EStart'] = initial_soc #SOC_initial
+    #         self.solve_model_main()
+    #         #deal with optimal solution: store and output
+    #         self.get_optimal_main()
+
     def optimization_model_with_input(self, initial_soc):#SOC_initial
         self.initial_soc = initial_soc
         with gp.Env() as env, gp.Model(env=env) as self.gur_model:
+            self.SetUpMain(initial_soc) #或者全部填在这里？
             self.set_up_main()
-            self.psh_system.parameter['EStart'] = initial_soc #SOC_initial
+            #self.psh_system.parameter['EStart'] = initial_soc #SOC_initial
             self.solve_model_main()
             #deal with optimal solution: store and output
             self.get_optimal_main()
