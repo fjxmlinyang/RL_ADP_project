@@ -12,7 +12,7 @@
 - OptModelSetUp
 
   - ___init__
-    - initial self.model 这里直接就把initial 放进去然后计算
+    - initial self.model 
 
   - add_var_e
 
@@ -52,7 +52,7 @@
 
     - get_optimal_gen_pump
 
-    - get_optimal_profit应该是在这里改
+    - get_optimal_profit
 
     - get_curr_cost
 
@@ -60,19 +60,15 @@
 
   - optimization_model_with_input
 
-    - 应该在这里加第一个
-
     - set_up_main
 
     - solve_model_main
-
-    - 在这里加第二个
 
     - get_optimal_main #get 
 
   - x_to_soc
 
-- Multiprocess_Cal这里直接就把initial 放进去然后计算
+- Multiprocess_Cal
 
   - calculate_new_soc
 
@@ -138,8 +134,6 @@
         - self.previous_point_soc_sum/self.previous_point_profit 
 
         - self.pre_scen_optimal_profit
-
-        - 
 
       - curve.curve_update 保证convex的update
 
