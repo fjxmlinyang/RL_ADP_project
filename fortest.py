@@ -56,7 +56,7 @@ class MultiRLSetUp():
 
 
     def calculate_new(self):
-        initial_soc = [4, 5, 6, 7, 8, 9, 10, 11]
+        initial_soc = [0, 30, 60, 90, 120, 150, 180, 210]
         self.calculate_new_soc()
         MultiRL = OptModelSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model_para, model_1)
         MultiRL.CalOpt(initial_soc)
