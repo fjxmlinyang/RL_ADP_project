@@ -18,46 +18,55 @@ class MultiRLSetUp():
         self.current_stage = 'training_500'
 
     def calculate_new_soc(self):
-        pre_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                  self.curr_scenario, self.current_stage)
-        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+        # self.alpha = 0.8  # 0.2
+        # self.date = 'March 07 2019'
+        # self.LAC_last_windows = 0  # 1#0
+        # self.probabilistic = 1  # 0#1
+        # self.RT_DA = 1  # 0#1
+        # self.curr_time = 0
+        # self.curr_scenario = 1
+        # self.current_stage = 'training_500'
+        # pre_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+        #                           self.curr_scenario, self.current_stage)
+        # # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
-        psh_system_2 = PshSystem(pre_model_para)
-        psh_system_2.set_up_parameter()
+        # psh_system_2 = PshSystem(pre_model_para)
+        # psh_system_2.set_up_parameter()
 
 
-        e_system_2 = ESystem(pre_model_para)
-        e_system_2.set_up_parameter()
-        #e_system_2.parameter['EStart'] = initial_soc
+        # e_system_2 = ESystem(pre_model_para)
+        # e_system_2.set_up_parameter()
+        # #e_system_2.parameter['EStart'] = initial_soc
  
-        if self.curr_time != 22:
-            # lmp, time = t+1, scenario= n
-            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
-                                       self.curr_scenario, self.current_stage)
-            self.prev_lmp = LMP(self.prev_model)
-            self.prev_lmp.set_up_parameter()
-            # curve, time = t+1, scenario= n-1
-            self.pre_curve = Curve(100, 0, 3000)
-            self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
-        elif self.curr_time == 22:
-            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                       self.curr_scenario, self.current_stage)
-            self.prev_lmp = LMP(self.prev_model)
-            self.prev_lmp.set_up_parameter()
+        # if self.curr_time != 22:
+        #     # lmp, time = t+1, scenario= n
+        #     self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
+        #                                self.curr_scenario, self.current_stage)
+        #     self.prev_lmp = LMP(self.prev_model)
+        #     self.prev_lmp.set_up_parameter()
+        #     # curve, time = t+1, scenario= n-1
+        #     self.pre_curve = Curve(100, 0, 3000)
+        #     self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
+        # elif self.curr_time == 22:
+        #     self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+        #                                self.curr_scenario, self.current_stage)
+        #     self.prev_lmp = LMP(self.prev_model)
+        #     self.prev_lmp.set_up_parameter()
 
-            self.pre_curve = Curve(100, 0, 3000)
-            self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
+        #     self.pre_curve = Curve(100, 0, 3000)
+        #     self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
 
-        model_1 = Model('DAMarket')
-        a = self.prev_lmp.lmp_scenarios
-        print(a)
-        b = self.pre_curve.point_Y
-        print(b)
+        # model_1 = Model('DAMarket')
+        # a = self.prev_lmp.lmp_scenarios
+        # print(a)
+        # b = self.pre_curve.point_Y
+        # print(b)
+        # MultiRL = OptModelSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model_para, model_1)
+
 
 
     #def calculate_new(self):
         initial_soc = [0, 2]
-        MultiRL = OptModelSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model_para, model_1)
         MultiRL.CalOpt(initial_soc)
         self.optimal_profit = MultiRL.optimal_profit
 
