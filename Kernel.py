@@ -26,7 +26,7 @@ class RL_Kernel():
 
     def main_function(self):
         self.Curr_Scenario_Cost_Total = []
-        self.start = 90
+        self.start = 95
         self.end = 120
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []

@@ -1,6 +1,6 @@
 import multiprocessing as mp
-import gurobipy as gp
-from gurobipy import GRB
+import gurobipy as grb
+from gurobipy import * #GRB
 import time
 import seaborn as sns
 import pandas as pd
@@ -304,42 +304,39 @@ class OptModelSetUp():
         self.curr_time = 0
         self.curr_scenario = 1
         self.current_stage = 'training_500'
-        pre_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+        self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
                                   self.curr_scenario, self.current_stage)
         # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
-        self.psh_system = PshSystem(pre_model_para)
+        self.psh_system = PshSystem(self.curr_model_para)
         self.psh_system.set_up_parameter()
 
 
-        self.e_system = ESystem(pre_model_para)
+        self.e_system = ESystem(self.curr_model_para)
         self.e_system.set_up_parameter()
-        e_system_2.parameter['EStart'] = initial_soc
+        self.e_system.parameter['EStart'] = initial_soc
  
         if self.curr_time != 22:
             # lmp, time = t+1, scenario= n
-            prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
+            self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
                                        self.curr_scenario, self.current_stage)
-            self.lmp = LMP(prev_model)
+            self.lmp = LMP(self.curr_model_para)
             self.lmp.set_up_parameter()
             # curve, time = t+1, scenario= n-1
             self.curve = Curve(100, 0, 3000)
             self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
         elif self.curr_time == 22:
-            prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
+            self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
                                        self.curr_scenario, self.current_stage)
-            self.lmp = LMP(prev_model)
+            self.lmp = LMP(self.curr_model_para)
             self.lmp.set_up_parameter()
 
             self.curve = Curve(100, 0, 3000)
             self.curve.input_curve(self.curr_time, self.curr_scenario - 1)
 
-        model_1 = Model('DAMarket')
-        a = self.prev_lmp.lmp_scenarios
-        print(a)
-        b = self.pre_curve.point_Y
-        print(b)
-        MultiRL = OptModelSetUp(self.psh_system, self.e_system, self.mp, self.curve, pre_model_para, model_1)
+        self.gur_model = Model('DAMarket')
+
+        #MultiRL = OptModelSetUp(self.psh_system, self.e_system, self.mp, self.curve, pre_model_para, self.model)
 
 
 ########################################
@@ -527,6 +524,8 @@ class OptModelSetUp():
         obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
         self.optimal_profit = obj.getValue()
 
+        self.optimal_profit_list.append(self.optimal_profit)
+
     def get_curr_cost(self):
         #put the soc_sum in, we get the profit
         point_profit = []
@@ -563,8 +562,8 @@ class OptModelSetUp():
 # #psh_system, e_system, lmp, curve, curr_model_para, gur_model
 
     def set_up_main(self):
-        self.set_up_constraint()
         self.set_up_variable()
+        self.set_up_constraint()
         self.set_up_object()
 
 
@@ -588,7 +587,7 @@ class OptModelSetUp():
 ##important function
     # def optimization_model_with_input(self, initial_soc):#SOC_initial
     #     self.initial_soc = initial_soc
-    #     with gp.Env() as env, gp.Model(env=env) as self.gur_model:
+    #     with grb.Env() as env, grb.Model(env=env) as self.gur_model:
     #         #self.set_up_main()
     #         self.set_up_constraint()
     #         self.set_up_variable()
@@ -600,7 +599,7 @@ class OptModelSetUp():
 
     def optimization_model_with_input(self, initial_soc):#SOC_initial
         self.initial_soc = initial_soc
-        with gp.Env() as env, gp.Model(env=env) as self.gur_model:
+        with grb.Env() as env, grb.Model(env=env) as self.gur_model:
             self.SetUpMain(initial_soc) #或者全部填在这里？
             self.set_up_main()
             #self.psh_system.parameter['EStart'] = initial_soc #SOC_initial
@@ -613,7 +612,7 @@ class OptModelSetUp():
 
     def CalOpt(self, initial_soc): #this is get_new_curve_step_1
     #if __name__ == '__main__':
-        self.optimal_profit = []
+        self.optimal_profit_list = []
         #self.initial_soc = initial_soc
         with mp.Pool() as pool:
             pool.map(self.optimization_model_with_input, initial_soc)

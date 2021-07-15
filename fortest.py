@@ -9,15 +9,15 @@ class MultiRLSetUp():
 
     def __init__(self):
         self.alpha = 0.8  # 0.2
-        self.date = 'March 07 2019'
-        self.LAC_last_windows = 0  # 1#0
-        self.probabilistic = 1  # 0#1
-        self.RT_DA = 1  # 0#1
-        self.curr_time = 0
-        self.curr_scenario = 1
-        self.current_stage = 'training_500'
+        # self.date = 'March 07 2019'
+        # self.LAC_last_windows = 0  # 1#0
+        # self.probabilistic = 1  # 0#1
+        # self.RT_DA = 1  # 0#1
+        # self.curr_time = 0
+        # self.curr_scenario = 1
+        # self.current_stage = 'training_500'
 
-    def calculate_new_soc(self):
+    #def calculate_new_soc(self):
         # self.alpha = 0.8  # 0.2
         # self.date = 'March 07 2019'
         # self.LAC_last_windows = 0  # 1#0
@@ -65,10 +65,11 @@ class MultiRLSetUp():
 
 
 
-    #def calculate_new(self):
-        initial_soc = [0, 2]
+    def calculate_new(self):
+        initial_soc = [0, 30, 60, 90, 120, 150]
+        MultiRL = OptModelSetUp()
         MultiRL.CalOpt(initial_soc)
-        self.optimal_profit = MultiRL.optimal_profit
+        self.optimal_profit = MultiRL.optimal_profit_list
 
 
 
@@ -99,10 +100,11 @@ class MultiRLSetUp():
 time_1 = time.time()
 training = MultiRLSetUp()
 #training.calculate_new_soc()
-training.calculate_new_soc()
-print(training.optimal_profit)
+training.calculate_new()
+
 time_2 = time.time()
 print(time_2 - time_1)
+print(training.optimal_profit)
 
 
 
