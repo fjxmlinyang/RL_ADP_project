@@ -2,6 +2,7 @@
 from multiprocess import *
 import time
 
+from gurobipy import *
 
 
 class MultiRLSetUp():
@@ -17,7 +18,6 @@ class MultiRLSetUp():
         self.current_stage = 'training_500'
 
     def calculate_new_soc(self):
-        #initial_soc = [4, 5, 6, 7, 8, 9, 10, 11]
         pre_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
                                   self.curr_scenario, self.current_stage)
         # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
@@ -55,9 +55,8 @@ class MultiRLSetUp():
         print(b)
 
 
-    def calculate_new(self):
-        initial_soc = [0, 30, 60, 90, 120, 150, 180, 210]
-        self.calculate_new_soc()
+    #def calculate_new(self):
+        initial_soc = [0, 2]
         MultiRL = OptModelSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model_para, model_1)
         MultiRL.CalOpt(initial_soc)
         self.optimal_profit = MultiRL.optimal_profit
@@ -91,7 +90,7 @@ class MultiRLSetUp():
 time_1 = time.time()
 training = MultiRLSetUp()
 #training.calculate_new_soc()
-training.calculate_new()
+training.calculate_new_soc()
 print(training.optimal_profit)
 time_2 = time.time()
 print(time_2 - time_1)

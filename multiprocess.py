@@ -532,6 +532,7 @@ class OptModelSetUp():
 
 ##important function
     def optimization_model_with_input(self, initial_soc):#SOC_initial
+        self.initial_soc = initial_soc
         with gp.Env() as env, gp.Model(env=env) as self.gur_model:
             self.set_up_main()
             self.psh_system.parameter['EStart'] = initial_soc #SOC_initial
