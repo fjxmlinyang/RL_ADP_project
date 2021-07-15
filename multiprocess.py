@@ -278,7 +278,6 @@ class LMP(System):
 class OptModelSetUp():
 
     def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
-        with gp.Env() as env, gp.Model(env=env) as self.gur_model:
         self.gur_model = gur_model
         self.psh_system = psh_system
         self.e_system = e_system
@@ -376,6 +375,23 @@ class OptModelSetUp():
             self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
 
 # the following is for set upt elements of optimiation problems
+
+    def set_up_constraint(self):
+    # rolling constraint E_start = E_end +pump + gen
+        self.add_constraint_rolling()
+    # upper and lower constraint
+        self.add_constraint_epsh()
+    # curve constraint
+        self.add_constraint_curve()
+    # constraint for  d_1I_2 <= soc_1 <=d_1I_1?##
+        self.add_constraint_soc()
+    # constraint for I_1<=I_2<=I_3
+        self.add_constraint_I()
+    # terminal constraint
+        self.add_constraint_terminal()
+
+        self.gur_model.update()
+
     def set_up_variable(self):
     #add gen/pump
         self.psh_gen = self.add_var_psh('psh_gen_main')
@@ -403,21 +419,6 @@ class OptModelSetUp():
 
         self.gur_model.update()
 
-    def set_up_constraint(self):
-    # rolling constraint E_start = E_end +pump + gen
-        self.add_constraint_rolling()
-    # upper and lower constraint
-        self.add_constraint_epsh()
-    # curve constraint
-        self.add_constraint_curve()
-    # constraint for  d_1I_2 <= soc_1 <=d_1I_1?##
-        self.add_constraint_soc()
-    # constraint for I_1<=I_2<=I_3
-        self.add_constraint_I()
-    # terminal constraint
-        self.add_constraint_terminal()
-
-        self.gur_model.update()
 
     def set_up_object(self):
         self.profit_max = []
@@ -431,6 +432,10 @@ class OptModelSetUp():
                 self.profit_max.append(self.curve.point_Y[bench_num + 1] * self.soc[bench_num ][k])
         print(self.profit_max)
         self.obj = quicksum(self.profit_max)
+
+
+
+
 
 ########################################
 ########################################
@@ -446,7 +451,6 @@ class OptModelSetUp():
         #a = self.optimal_soc_sum
         #print(a)
 
-
     def get_optimal_gen_pump(self):
     #get optimal_psh_gen/pump
         self.optimal_psh_pump = []
@@ -460,13 +464,11 @@ class OptModelSetUp():
             #psh0.append(-psh)
             self.optimal_psh_pump.append(psh)
         self.optimal_psh_pump_sum = sum(self.optimal_psh_pump)
-######################################################
-#####################################################
+
     def get_optimal_profit(self):
     #get optimal profit
         #self.optimal_profit = self.calculate_pts(self.optimal_soc_sum) ##注意这里
-        #self.a = a
-        #with gp.Env() as env, gp.Model(env=env) as self.gur_model:
+
         obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
         self.optimal_profit = obj.getValue()
 
@@ -502,62 +504,41 @@ class OptModelSetUp():
 
 
 
-class RLSetUp(OptModelSetUp):
-#psh_system, e_system, lmp, curve, curr_model_para, gur_model
-
+#class RLSetUp(OptModelSetUp):
+# #psh_system, e_system, lmp, curve, curr_model_para, gur_model
 
     def set_up_main(self):
-        self.set_up_variable()
         self.set_up_constraint()
+        self.set_up_variable()
         self.set_up_object()
+
 
     def solve_model_main(self):
         self.gur_model.setObjective(self.obj, GRB.MAXIMIZE)
         self.gur_model.setParam("MIPGap", 0.0001)
         self.gur_model.optimize()
 
-    def get_optimal_main(self, initial_soc):
+    def get_optimal_main(self):
         # get optimal soc
-        self.get_optimal_soc()
-        self.get_optimal_gen_pump()
-        # with mp.Pool() as pool:
-        #     pool.map(self.get_optimal_profit, initial_soc)
-        #self.get_optimal_profit()
-        self.get_curr_cost()
-        self.output_optimal()
-    # def CalOpt(self, initial_soc): #this is get_new_curve_step_1
-    # #if __name__ == '__main__':
-    #     self.optimal_profit = []
-    #     self.initial_soc = initial_soc
-    #     with mp.Pool() as pool:
-    #         pool.map(self.MainSol, self.initial_soc)
+        #self.get_optimal_soc()
+        #self.get_optimal_gen_pump()
+        self.get_optimal_profit()
+        #self.get_curr_cost()
+        #self.output_optimal()
+
 
 
 
 
 ##important function
-    def optimization_model(self):
-        self.set_up_main()
-        self.solve_model_main()
-        #deal with optimal solution: store and output
-        self.get_optimal_main()
-        ###update curve and output curve
-
-        #self.get_new_curve_main()
-
-
-
-    def optimization_model_with_input(self):#SOC_initial
-        self.set_up_main()
-        #self.psh_system.parameter['EStart'] = 0#SOC_initial
-        self.solve_model_main()
-        #deal with optimal solution: store and output
-        #self.get_optimal_main()
-        self.get_optimal_soc()
-        self.get_optimal_gen_pump()
-        self.get_optimal_profit()
-        self.output_optimal()
-
+    def optimization_model_with_input(self, initial_soc):#SOC_initial
+        with gp.Env() as env, gp.Model(env=env) as self.gur_model:
+            self.set_up_main()
+            self.psh_system.parameter['EStart'] = initial_soc #SOC_initial
+            self.solve_model_main()
+            #deal with optimal solution: store and output
+            self.get_optimal_main()
+    
     def x_to_soc(self, point_X):
         # change soc_sum to soc_1 + soc_2 + soc_3
         turn_1 = point_X // self.curve.steps
@@ -578,9 +559,9 @@ class RLSetUp(OptModelSetUp):
     def CalOpt(self, initial_soc): #this is get_new_curve_step_1
     #if __name__ == '__main__':
         self.optimal_profit = []
-        self.initial_soc = initial_soc
+        #self.initial_soc = initial_soc
         with mp.Pool() as pool:
-            pool.map(self.MainSol, self.initial_soc)
+            pool.map(self.optimization_model_with_input, initial_soc)
 
 
 
