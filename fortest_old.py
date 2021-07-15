@@ -20,7 +20,7 @@ class test():
         initial_soc = [4, 5, 6, 7, 8, 9, 10, 11]
         MultiRL = MultiRLSetUp()
         MultiRL.cal(initial_soc)
-        self.optimal_profit = MultiRL.optimal_profit
+        self.optimal_profit = MultiRL.optimal_profit_list
 
 
     # def calculate_new_soc(self):#, initial_soc):

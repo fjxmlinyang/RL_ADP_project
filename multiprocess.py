@@ -523,7 +523,7 @@ class OptModelSetUp():
 
         obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
         self.optimal_profit = obj.getValue()
-
+        print(self.optimal_profit)
         self.optimal_profit_list.append(self.optimal_profit)
 
     def get_curr_cost(self):

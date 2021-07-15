@@ -46,7 +46,10 @@ class MultiRLSetUp():
             # define model
 
             self.model.optimize()
-            self.optimal_profit.append(self.model.getObjective().getValue())
+            obj = self.model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
+            self.optimal_profit = obj.getValue()
+            print(self.optimal_profit)
+            self.optimal_profit_list.append(self.optimal_profit)
 
             # retrieve data from model
     def add_Var(self):
@@ -61,7 +64,7 @@ class MultiRLSetUp():
 
     def cal(self, initial_soc):
     #if __name__ == '__main__':
-        self.optimal_profit = []
+        self.optimal_profit_list = []
         with mp.Pool() as pool:
             pool.map(self.solve_model, initial_soc)
 
