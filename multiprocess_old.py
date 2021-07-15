@@ -54,7 +54,7 @@ class MultiRLSetUp():
         self.y = self.model.addVar(vtype=GRB.BINARY, name="y")
         self.z = self.model.addVar(vtype=GRB.BINARY, name="z")
 
-    def add_constraint(self,):
+    def add_constraint(self):
         self.model.setObjective(self.x + self.y + 2 * self.z, GRB.MAXIMIZE)
         self.model.addConstr(self.x + 2 * self.y + 3 * self.z <= self.a, "c0")
         self.model.addConstr(self.x + self.y >= 1, "c1")
