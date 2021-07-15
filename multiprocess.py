@@ -538,6 +538,19 @@ class OptModelSetUp():
             self.solve_model_main()
             #deal with optimal solution: store and output
             self.get_optimal_main()
+
+
+##the most most important function
+
+    def CalOpt(self, initial_soc): #this is get_new_curve_step_1
+    #if __name__ == '__main__':
+        self.optimal_profit = []
+        #self.initial_soc = initial_soc
+        with mp.Pool() as pool:
+            pool.map(self.optimization_model_with_input, initial_soc)
+
+
+
     
     def x_to_soc(self, point_X):
         # change soc_sum to soc_1 + soc_2 + soc_3
@@ -555,179 +568,5 @@ class OptModelSetUp():
                 point_x_soc.append(0)
         return point_x_soc
 
-
-    def CalOpt(self, initial_soc): #this is get_new_curve_step_1
-    #if __name__ == '__main__':
-        self.optimal_profit = []
-        #self.initial_soc = initial_soc
-        with mp.Pool() as pool:
-            pool.map(self.optimization_model_with_input, initial_soc)
-
-
-
-
-
-
-
-
-
-#好，这里开始是把其写成multiprocessing
-
-
-
-# class MultiRLSetUp():
-
-#     def __init__(self):
-#         self.alpha = 0.8  # 0.2
-#         self.date = 'March 07 2019'
-#         self.LAC_last_windows = 0  # 1#0
-#         self.probabilistic = 1  # 0#1
-#         self.RT_DA = 1  # 0#1
-#         self.curr_time = 0
-#         self.curr_scenario = 1
-#         self.current_stage = 'training_500'
-
-#     def calculate_new_soc(self, initial_soc):
-#         pre_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-#                                   self.curr_scenario, self.current_stage)
-#         # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
-
-#         psh_system_2 = PshSystem(pre_model_para)
-#         psh_system_2.set_up_parameter()
-
-
-#         e_system_2 = ESystem(pre_model_para)
-#         e_system_2.set_up_parameter()
-#         e_system_2.parameter['EStart'] = initial_soc
-#         print('e_system_2.parameter is ' + str(e_system_2.parameter))
-
-#         if self.curr_time != 22:
-#             # lmp, time = t+1, scenario= n
-#             self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
-#                                        self.curr_scenario, self.current_stage)
-#             self.prev_lmp = LMP(self.prev_model)
-#             self.prev_lmp.set_up_parameter()
-#             # curve, time = t+1, scenario= n-1
-#             self.pre_curve = Curve(100, 0, 3000)
-#             self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
-#         elif self.curr_time == 22:
-#             self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-#                                        self.curr_scenario, self.current_stage)
-#             self.prev_lmp = LMP(self.prev_model)
-#             self.prev_lmp.set_up_parameter()
-
-#             self.pre_curve = Curve(100, 0, 3000)
-#             self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
-
-#         model_1 = Model('DAMarket')
-#         a = self.prev_lmp.lmp_scenarios
-#         print(a)
-#         b = self.pre_curve.point_Y
-#         print(b)
-
-#         pre_model = RLSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model_para, model_1)
-#         pre_model.optimization_model_with_input()
-#         rt = pre_model.optimal_profit
-
-#     def MainSol(self, a): #this is calculate_new_soc
-#         self.a = a
-#         with gp.Env() as env, gp.Model(env=env) as self.model:
-#         #with gp.Model as model:
-
-#             self.ReadVar()
-
-#             self.AddVar()
-#             #add_var()
-
-#             time.sleep(5)
-#             self.AddConstraint()
-#             # define model
-
-#             self.model.optimize()
-#             self.optimal_profit.append(self.model.getObjective().getValue())
-
-#     def get_new_curve_step_1(self, initial_soc):
-#     #how can we get each new curve_point_X
-
-#     #get new curve_profit
-#         self.second_curve_profit = []
-#         beta = 0.001
-
-#     # make sure its terminal soc works
-#         self.check_soc_curve = []
-#     #here need parallel
-#         #for value in self.second_curve_soc:
-#         distance = initial_soc - float(self.e_system_2.parameter['EEnd'])
-#         left_cod = distance <= 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system_2.parameter['PumpMax']) * (float(self.psh_system_2.parameter['PumpEfficiency'])-beta) )
-#         right_cod = distance > 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system_2.parameter['GenMax']) / (float(self.psh_system_2.parameter['GenEfficiency'])+beta) )
-#         if left_cod or right_cod:
-#         #if left_value < 0 and right_value > 0:
-#             point_y = self.calculate_new_soc(initial_soc)
-#             check = 1
-#         else:
-#             #point_y = 0
-#             point_y = -1000000 #self.calculate_pts(value)
-#             check = 0
-#         #FIND the left and right point of using cal_new_soc
-#         self.second_curve_profit.append(point_y)
-#         self.check_soc_curve.append(check)
-
-
-#     def CalOpt(self, initial_soc): #this is get_new_curve_step_1
-#     #if __name__ == '__main__':
-#         self.optimal_profit = []
-#         self.initial_soc = initial_soc
-#         with mp.Pool() as pool:
-#             pool.map(self.MainSol, self.initial_soc)
-
-
-
-
-
-
-    #
-    # def MainSol(self, a): #this is main setup
-    #     self.a = a
-    #     with gp.Env() as env, gp.Model(env=env) as self.model:
-    #     #with gp.Model as model:
-    #
-    #         self.ReadVar()
-    #
-    #         self.AddVar()
-    #         #add_var()
-    #
-    #         time.sleep(5)
-    #         self.AddConstraint()
-    #         # define model
-    #
-    #         self.model.optimize()
-    #         self.optimal_profit.append(self.model.getObjective().getValue())
-    #
-    #         # retrieve data from model
-    # def ReadVar(self):
-    #     etst= 0
-    #
-    #
-    # def AddVar(self):
-    #     self.x = self.model.addVar(vtype=GRB.BINARY, name="x")
-    #     self.y = self.model.addVar(vtype=GRB.BINARY, name="y")
-    #     self.z = self.model.addVar(vtype=GRB.BINARY, name="z")
-    #
-    # def AddConstraint(self):
-    #
-    #     self.model.setObjective(self.x + self.y + 2 * self.z, GRB.MAXIMIZE)
-    #     self.model.addConstr(self.x + 2 * self.y + 3 * self.z <= self.a, "c0")
-    #     self.model.addConstr(self.x + self.y >= 1, "c1")
-    #
-    #
-    #
-    #
-    # def CalOpt(self, initial_soc): #this is main calculation
-    # #if __name__ == '__main__':
-    #     self.optimal_profit = []
-    #     self.initial_soc = initial_soc
-    #     with mp.Pool() as pool:
-    #         pool.map(self.MainSol, self.initial_soc)
-    #
 
 

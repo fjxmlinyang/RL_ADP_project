@@ -16,7 +16,8 @@ class MultiRLSetUp():
         self.curr_scenario = 1
         self.current_stage = 'training_500'
 
-    def calculate_new_soc(self, initial_soc):
+    def calculate_new_soc(self):
+        #initial_soc = [4, 5, 6, 7, 8, 9, 10, 11]
         pre_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
                                   self.curr_scenario, self.current_stage)
         # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
@@ -27,9 +28,8 @@ class MultiRLSetUp():
 
         e_system_2 = ESystem(pre_model_para)
         e_system_2.set_up_parameter()
-        e_system_2.parameter['EStart'] = initial_soc
-        print('e_system_2.parameter is ' + str(e_system_2.parameter))
-
+        #e_system_2.parameter['EStart'] = initial_soc
+ 
         if self.curr_time != 22:
             # lmp, time = t+1, scenario= n
             self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
@@ -54,13 +54,11 @@ class MultiRLSetUp():
         b = self.pre_curve.point_Y
         print(b)
 
-        pre_model = RLSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model_para, model_1)
-        pre_model.optimization_model_with_input()
-        rt = pre_model.optimal_profit
 
     def calculate_new(self):
         initial_soc = [4, 5, 6, 7, 8, 9, 10, 11]
-        MultiRL = MultiRLSetUp()
+        self.calculate_new_soc()
+        MultiRL = OptModelSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model_para, model_1)
         MultiRL.CalOpt(initial_soc)
         self.optimal_profit = MultiRL.optimal_profit
 
@@ -91,7 +89,7 @@ class MultiRLSetUp():
 
 
 time_1 = time.time()
-training = test()
+training = MultiRLSetUp()
 #training.calculate_new_soc()
 training.calculate_new()
 print(training.optimal_profit)
