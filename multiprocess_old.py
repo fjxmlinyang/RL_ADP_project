@@ -27,31 +27,38 @@
 
 
 import multiprocessing as mp
+from multiprocessing import *
 import gurobipy as gp
 from gurobipy import GRB
 import time
 from ModelSetUp import *
 
 class MultiRLSetUp():
+    def __init__(self):
+        self.optimal_profit_list = []
+        #self.optimal_profit = None
 
     def solve_model(self, a):
         self.a = a
         with gp.Env() as env, gp.Model(env=env) as self.model:
         #with gp.Model as model:
             self.add_Var()
-            #add_var()
 
-            time.sleep(5)
+            time.sleep(1)
             self.add_constraint()
             # define model
 
             self.model.optimize()
             obj = self.model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
-            self.optimal_profit = obj.getValue()
-            print(self.optimal_profit)
-            self.optimal_profit_list.append(self.optimal_profit)
+            optimal_profit = obj.getValue()
+            # print('========================', type(obj.getValue()))
+            # print('optimal result is ########################', self.optimal_profit)
+            # self.optimal_profit_list.append(self.optimal_profit)
+            # # self.optimal_profit_list_test = [x for x in self.optimal_profit_list]
+            # print('test optimal list result is ########################', self.optimal_profit_list)
+            return optimal_profit
 
-            # retrieve data from model
+
     def add_Var(self):
         self.x = self.model.addVar(vtype=GRB.BINARY, name="x")
         self.y = self.model.addVar(vtype=GRB.BINARY, name="y")
@@ -64,11 +71,17 @@ class MultiRLSetUp():
 
     def cal(self, initial_soc):
     #if __name__ == '__main__':
-        self.optimal_profit_list = []
-        with mp.Pool() as pool:
-            pool.map(self.solve_model, initial_soc)
+        with mp.Pool() as pool:#, Manager() as manager:
+            #self.optimal_profit_list = manager.list()
+            _temp = pool.map(self.solve_model, initial_soc)
+        print('==================', _temp)
 
+        self.optimal_profit_list  = _temp
+        #在这里就给地址了
+        #print('test 2 optimal list result is ##############################', self.optimal_profit_list)
+        #return self.optimal_profit_list
 
+        #print('test optimal list result is ##############################', self.optimal_profit_list_test)
 
 # a = A()
 # initial_soc = [4, 5, 6, 7, 8, 9, 10, 11]

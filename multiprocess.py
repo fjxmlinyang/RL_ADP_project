@@ -1,4 +1,5 @@
 import multiprocessing as mp
+from multiprocessing import *
 import gurobipy as grb
 from gurobipy import * #GRB
 import time
@@ -523,8 +524,7 @@ class OptModelSetUp():
 
         obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
         self.optimal_profit = obj.getValue()
-        print(self.optimal_profit)
-        self.optimal_profit_list.append(self.optimal_profit)
+
 
     def get_curr_cost(self):
         #put the soc_sum in, we get the profit
@@ -606,16 +606,18 @@ class OptModelSetUp():
             self.solve_model_main()
             #deal with optimal solution: store and output
             self.get_optimal_main()
+            return self.optimal_profit
 
 
 ##the most most important function
 
     def CalOpt(self, initial_soc): #this is get_new_curve_step_1
     #if __name__ == '__main__':
-        self.optimal_profit_list = []
+
         #self.initial_soc = initial_soc
         with mp.Pool() as pool:
-            pool.map(self.optimization_model_with_input, initial_soc)
+            _temp = pool.map(self.optimization_model_with_input, initial_soc)
+        self.optimal_profit_list = _temp
 
 
 

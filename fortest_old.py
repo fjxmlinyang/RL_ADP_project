@@ -17,10 +17,16 @@ class test():
         self.current_stage ='training_500'
 
     def calculate_new(self):
-        initial_soc = [4, 5, 6, 7, 8, 9, 10, 11]
+        initial_soc = [4, 5, 6, 7, 8, 9, 10]
         MultiRL = MultiRLSetUp()
         MultiRL.cal(initial_soc)
+        #y = [x for x in MultiRL.optimal_profit_list]
         self.optimal_profit = MultiRL.optimal_profit_list
+        #print('the best profit is ########', MultiRL.optimal_profit_list)
+
+        #print('the best profit is ########', y)
+
+
 
 
     # def calculate_new_soc(self):#, initial_soc):
