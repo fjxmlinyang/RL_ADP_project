@@ -277,7 +277,7 @@ from Curve import *
 #         self.Output_folder = None
 #
 #
-
+#
 
 
 class OptModelSetUp():
@@ -298,51 +298,6 @@ class OptModelSetUp():
         self.curr_model_para = None
         # self.pre_curve = pre_curve
         # self.pre_lmp = pre_lmp
-########################################
-
-    def SetUpMain(self, initial_soc):
-        self.alpha = 0.8  # 0.2
-        self.date = 'March 07 2019'
-        self.LAC_last_windows = 0  # 1#0
-        self.probabilistic = 1  # 0#1
-        self.RT_DA = 1  # 0#1
-        self.curr_time = 0
-        self.curr_scenario = 1
-        self.current_stage = 'training_500'
-        self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                  self.curr_scenario, self.current_stage)
-        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
-
-        self.psh_system = PshSystem(self.curr_model_para)
-        self.psh_system.set_up_parameter()
-
-
-        self.e_system = ESystem(self.curr_model_para)
-        self.e_system.set_up_parameter()
-        self.e_system.parameter['EStart'] = initial_soc
- 
-        if self.curr_time != 22:
-            # lmp, time = t+1, scenario= n
-            self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
-                                       self.curr_scenario, self.current_stage)
-            self.lmp = LMP(self.curr_model_para)
-            self.lmp.set_up_parameter()
-            # curve, time = t+1, scenario= n-1
-            self.curve = Curve(100, 0, 3000)
-            self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
-        elif self.curr_time == 22:
-            self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                       self.curr_scenario, self.current_stage)
-            self.lmp = LMP(self.curr_model_para)
-            self.lmp.set_up_parameter()
-
-            self.curve = Curve(100, 0, 3000)
-            self.curve.input_curve(self.curr_time, self.curr_scenario - 1)
-
-        self.gur_model = Model('DAMarket')
-
-        #MultiRL = OptModelSetUp(self.psh_system, self.e_system, self.mp, self.curve, pre_model_para, self.model)
-
 
 ########################################
 # funtions for set up
@@ -431,7 +386,7 @@ class OptModelSetUp():
             RHS_2 = -(curr_time  ) * self.psh_system.parameter['PumpMax'] * (self.psh_system.parameter['PumpEfficiency']- beta) #PSHmax_p[0] * PSHefficiency[0]
             self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
 
-# the following is for set upt elements of optimiation problems
+# the following is for set upt elements of optimization problems
 
     def set_up_constraint(self):
     # rolling constraint E_start = E_end +pump + gen
@@ -557,12 +512,26 @@ class OptModelSetUp():
                 st = time + ',' + '%s,%.1f' % (name, self.optimal_e) + '\n'
                 wf.write(st)
 
+    def x_to_soc(self, point_X):
+        # change soc_sum to soc_1 + soc_2 + soc_3
+        turn_1 = point_X // self.curve.steps
+        rest = point_X % self.curve.steps
+        point_x_soc = []
+        for i in range(self.curve.numbers):
+            if turn_1 > 0:
+                point_x_soc.append(self.curve.steps)
+                turn_1 -= 1
+            elif turn_1 == 0:
+                point_x_soc.append(rest)
+                turn_1 -= 1
+            else:
+                point_x_soc.append(0)
+        return point_x_soc
 
 
 
 
-
-#class RLSetUp(OptModelSetUp):
+class RLSetUp(OptModelSetUp):
 # #psh_system, e_system, lmp, curve, curr_model_para, gur_model
 
     def set_up_main(self):
@@ -584,63 +553,73 @@ class OptModelSetUp():
         #self.get_curr_cost()
         #self.output_optimal()
 
+        ########################################
+
+    def SetUpMain(self, initial_soc):
+        self.alpha = 0.8  # 0.2
+        self.date = 'March 07 2019'
+        self.LAC_last_windows = 0  # 1#0
+        self.probabilistic = 1  # 0#1
+        self.RT_DA = 1  # 0#1
+        self.curr_time = 1
+        self.curr_scenario = 2
+        self.current_stage = 'training_500'
+        self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
+                                             self.curr_time,
+                                             self.curr_scenario, self.current_stage)
+        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+
+        self.psh_system = PshSystem(self.curr_model_para)
+        self.psh_system.set_up_parameter()
+
+        self.e_system = ESystem(self.curr_model_para)
+        self.e_system.set_up_parameter()
+        self.e_system.parameter['EStart'] = initial_soc
+
+        if self.curr_time != 22:
+            # lmp, time = t+1, scenario= n
+            self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
+                                                 self.curr_time + 1,
+                                                 self.curr_scenario, self.current_stage)
+            self.lmp = LMP(self.curr_model_para)
+            self.lmp.set_up_parameter()
+            # curve, time = t+1, scenario= n-1
+            self.curve = Curve(100, 0, 3000)
+            self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
+        elif self.curr_time == 22:
+            self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
+                                                 self.curr_time,
+                                                 self.curr_scenario, self.current_stage)
+            self.lmp = LMP(self.curr_model_para)
+            self.lmp.set_up_parameter()
+
+            self.curve = Curve(100, 0, 3000)
+            self.curve.input_curve(self.curr_time, self.curr_scenario - 1)
+
+        self.gur_model = Model('DAMarket')
 
 
-
-
-##important function
-    # def optimization_model_with_input(self, initial_soc):#SOC_initial
-    #     self.initial_soc = initial_soc
-    #     with grb.Env() as env, grb.Model(env=env) as self.gur_model:
-    #         #self.set_up_main()
-    #         self.set_up_constraint()
-    #         self.set_up_variable()
-    #         self.set_up_object()
-    #         self.psh_system.parameter['EStart'] = initial_soc #SOC_initial
-    #         self.solve_model_main()
-    #         #deal with optimal solution: store and output
-    #         self.get_optimal_main()
-
-    def optimization_model_with_input(self, initial_soc):#SOC_initial
-        self.initial_soc = initial_soc
+    def MainMultWithInput(self, initial_soc):#SOC_initial
         with grb.Env() as env, grb.Model(env=env) as self.gur_model:
-            self.SetUpMain(initial_soc) #或者全部填在这里？
+            self.SetUpMain(initial_soc) #在这里才用到
             self.set_up_main()
-            #self.psh_system.parameter['EStart'] = initial_soc #SOC_initial
             self.solve_model_main()
-            #deal with optimal solution: store and output
             self.get_optimal_main()
-            return self.optimal_profit
+        return self.optimal_profit
 
 
 ##the most most important function
 
-    def CalOpt(self, initial_soc): #this is get_new_curve_step_1
+    def CalOpt(self, initial_soc):
     #if __name__ == '__main__':
 
-        #self.initial_soc = initial_soc
         with mp.Pool() as pool:
-            _temp = pool.map(self.optimization_model_with_input, initial_soc)
+            _temp = pool.map(self.MainMultWithInput, initial_soc)
         self.optimal_profit_list = _temp
 
 
 
-    
-    def x_to_soc(self, point_X):
-        # change soc_sum to soc_1 + soc_2 + soc_3
-        turn_1 = point_X // self.curve.steps
-        rest = point_X % self.curve.steps
-        point_x_soc = []
-        for i in range(self.curve.numbers):
-            if turn_1 > 0:
-                point_x_soc.append(self.curve.steps)
-                turn_1 -= 1
-            elif turn_1 == 0:
-                point_x_soc.append(rest)
-                turn_1 -= 1
-            else:
-                point_x_soc.append(0)
-        return point_x_soc
+
 
 
 

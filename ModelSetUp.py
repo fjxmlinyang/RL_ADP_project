@@ -8,16 +8,26 @@ from CurrModelPara import *
 from Curve import *
 
 class OptModelSetUp():
-
-    def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
-        self.gur_model = gur_model
-        self.psh_system = psh_system
-        self.e_system = e_system
-        self.lmp = lmp
-        self.curve = curve
-        self.curr_model_para = curr_model_para
+    def __init__(self):
+        self.gur_model = None
+        self.psh_system = None
+        self.e_system = None
+        self.lmp = None
+        self.curve = None
+        self.curr_model_para = None
         # self.pre_curve = pre_curve
         # self.pre_lmp = pre_lmp
+
+    # def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
+    #     self.gur_model = gur_model
+    #     self.psh_system = psh_system
+    #     self.e_system = e_system
+    #     self.lmp = lmp
+    #     self.curve = curve
+    #     self.curr_model_para = curr_model_para
+    #     # self.pre_curve = pre_curve
+    #     # self.pre_lmp = pre_lmp
+
 ########################################
 ########################################
 #funtions for set up
@@ -235,7 +245,16 @@ class OptModelSetUp():
 
 class RLSetUp(OptModelSetUp):
 #psh_system, e_system, lmp, curve, curr_model_para, gur_model
+    def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
+        self.gur_model = gur_model
+        self.psh_system = psh_system
+        self.e_system = e_system
+        self.lmp = lmp
+        self.curve = curve
+        self.curr_model_para = curr_model_para
 
+        # self.pre_curve = pre_curve
+        # self.pre_lmp = pre_lmp
 
     def set_up_main(self):
         self.set_up_variable()
