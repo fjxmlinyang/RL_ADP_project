@@ -7,7 +7,7 @@ from ModelSetUp import *
 from CurrModelPara import *
 from Curve import *
 #from Main_cal_opt import find_optimal_value
-
+from multiprocess import *
 
 
 class RL_Kernel():
@@ -17,17 +17,17 @@ class RL_Kernel():
         #self.action = None
         self.alpha = 0.8#0.2
         self.date = 'March 07 2019'
-        self.LAC_last_windows = 0#1#0
-        self.probabilistic = 1#0#1
-        self.RT_DA = 1#0#1
+        self.LAC_last_windows = 1#0
+        self.probabilistic = 0#1
+        self.RT_DA = 0#1
         self.curr_time = 0
         self.curr_scenario = 1
-        self.current_stage ='training_500' #'training_500'
+        self.current_stage ='training_50' #'training_500'
 
     def main_function(self):
         self.Curr_Scenario_Cost_Total = []
-        self.start = 140
-        self.end = 143
+        self.start = 1
+        self.end = 50
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []
@@ -218,7 +218,7 @@ class RL_Kernel():
             right_cod = distance > 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency'])+beta) )
             if left_cod or right_cod:
             #if left_value < 0 and right_value > 0:
-                point_y = self.calculate_new_soc(value)
+                point_y = 0#self.calculate_new_soc(value)
                 check = 1
             else:
                 #point_y = 0
@@ -228,7 +228,37 @@ class RL_Kernel():
             self.second_curve_profit.append(point_y)
             self.check_soc_curve.append(check)
 
-        # multiprocess(self.second_curve_soc)
+        #here are the multiprocess!!
+
+        time_1 = time.time()
+        initial_soc_list = []
+        for i in range(len(self.check_soc_curve)):
+            if self.check_soc_curve[i] == 1:
+                initial_soc_list.append(self.old_curve.point_X[i])
+
+        MultiRL = MulRLSetUp()
+        MultiRL.alpha = self.alpha # 0.2
+        MultiRL.date = self.date
+        MultiRL.LAC_last_windows = self.LAC_last_windows  # 1#0
+        MultiRL.probabilistic = self.probabilistic  # 0#1
+        MultiRL.RT_DA = self.RT_DA #1
+        MultiRL.curr_time = self.curr_time
+        MultiRL.curr_scenario = self.curr_scenario
+        MultiRL.current_stage = self.current_stage #'training_500'
+        MultiRL.CalOpt(initial_soc_list)
+        #MultiRL.optimal_profit_list
+
+        #print(MultiRL.optimal_profit_list)
+
+
+        for i in range(len(self.check_soc_curve)):
+            if self.check_soc_curve[i] == 1:
+                self.second_curve_profit[i] = MultiRL.optimal_profit_list[i]
+        time_2 = time.time()
+        print('the time is', time_2 - time_1)
+
+
+
 
 
         #find the boundary point

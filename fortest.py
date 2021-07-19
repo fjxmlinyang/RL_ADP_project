@@ -112,8 +112,19 @@ from gurobipy import *
 time_1 = time.time()
 initial_soc = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480, 510, 540, 570, 600, 630, 660, 690, 720, 750,\
                 780, 810, 840, 870, 900, 930, 960, 990, 1020, 1050, 1080, 1110, 1140, 1170, 1200, 1230, 1260, 1290, 1320, 1350, 1380, 1410,\
+                1440, 1470, 1500, \
+               0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480, 510, 540, 570, 600, 630, 660, 690, 720, 750,\
+                780, 810, 840, 870, 900, 930, 960, 990, 1020, 1050, 1080, 1110, 1140, 1170, 1200, 1230, 1260, 1290, 1320, 1350, 1380, 1410,\
                 1440, 1470, 1500]
-MultiRL = RLSetUp()
+MultiRL = MulRLSetUp()
+MultiRL.alpha = 0.8  # 0.2
+MultiRL.date = 'March 07 2019'
+MultiRL.LAC_last_windows = 1  # 1#0
+MultiRL.probabilistic = 0  # 0#1
+MultiRL.RT_DA = 0  # 0#1
+MultiRL.curr_time = 1
+MultiRL.curr_scenario = 2
+MultiRL.current_stage = 'training_500'
 #MultiRL = OptModelSetUp()
 MultiRL.CalOpt(initial_soc)
 time_2 = time.time()

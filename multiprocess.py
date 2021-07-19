@@ -280,7 +280,7 @@ from Curve import *
 #
 
 
-class OptModelSetUp():
+class MulOptModelSetUp():
 
     # def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
         # self.gur_model = gur_model
@@ -298,6 +298,14 @@ class OptModelSetUp():
         self.curr_model_para = None
         # self.pre_curve = pre_curve
         # self.pre_lmp = pre_lmp
+        # self.alpha = 0.8  # 0.2
+        # self.date = 'March 07 2019'
+        # self.LAC_last_windows = 0  # 1#0
+        # self.probabilistic = 1  # 0#1
+        # self.RT_DA = 1  # 0#1
+        # self.curr_time = 1
+        # self.curr_scenario = 2
+        # self.current_stage = 'training_500'
 
 ########################################
 # funtions for set up
@@ -531,7 +539,7 @@ class OptModelSetUp():
 
 
 
-class RLSetUp(OptModelSetUp):
+class MulRLSetUp(MulOptModelSetUp):
 # #psh_system, e_system, lmp, curve, curr_model_para, gur_model
 
     def set_up_main(self):
@@ -556,14 +564,14 @@ class RLSetUp(OptModelSetUp):
         ########################################
 
     def SetUpMain(self, initial_soc):
-        self.alpha = 0.8  # 0.2
-        self.date = 'March 07 2019'
-        self.LAC_last_windows = 0  # 1#0
-        self.probabilistic = 1  # 0#1
-        self.RT_DA = 1  # 0#1
-        self.curr_time = 1
-        self.curr_scenario = 2
-        self.current_stage = 'training_500'
+        # self.alpha = 0.8  # 0.2
+        # self.date = 'March 07 2019'
+        # self.LAC_last_windows = 0  # 1#0
+        # self.probabilistic = 1  # 0#1
+        # self.RT_DA = 1  # 0#1
+        # self.curr_time = 1
+        # self.curr_scenario = 2
+        # self.current_stage = 'training_500'
         self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
                                              self.curr_time,
                                              self.curr_scenario, self.current_stage)
@@ -600,21 +608,22 @@ class RLSetUp(OptModelSetUp):
 
 
     def MainMultWithInput(self, initial_soc):#SOC_initial
-        with grb.Env() as env, grb.Model(env=env) as self.gur_model:
-            self.SetUpMain(initial_soc) #在这里才用到
-            self.set_up_main()
-            self.solve_model_main()
-            self.get_optimal_main()
+        self.SetUpMain(initial_soc)
+        #with grb.Env() as env, grb.Model(env=env) as self.gur_model:
+             #在这里才用到
+        self.set_up_main()
+        self.solve_model_main()
+        self.get_optimal_main()
         return self.optimal_profit
 
 
 ##the most most important function
 
-    def CalOpt(self, initial_soc):
-    #if __name__ == '__main__':
+    def CalOpt(self, initial_input):
+        #if __name__ == '__main__':
 
         with mp.Pool() as pool:
-            _temp = pool.map(self.MainMultWithInput, initial_soc)
+            _temp = pool.map(self.MainMultWithInput, initial_input)
         self.optimal_profit_list = _temp
 
 
