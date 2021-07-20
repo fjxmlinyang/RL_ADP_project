@@ -66,7 +66,8 @@ class Curve(object):
 
     def input_curve(self, time, scenario):
         _str = str(time)
-        filename =  self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
+        #filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
+        filename = f'{self.filename_all}/Curve_time_{_str}_scenario_{str(scenario)}.csv'
         df = pd.read_csv(filename)
         self.segments = df.values.tolist()
         self.curve_initial() #!!!别忘了

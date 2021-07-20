@@ -25,8 +25,9 @@ class RL_Kernel():
         self.current_stage ='training_50' #'training_500'
 
     def main_function(self):
+        time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        self.start = 1
+        self.start = 2
         self.end = 50
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
@@ -40,6 +41,8 @@ class RL_Kernel():
                 self.output_psh_soc()
             self.output_psh_soc_main()
         self.output_curr_cost()
+        time_2 = time.time()
+        print('one iteration time is', time_2-time_1)
 
 
     def output_curr_cost(self):
@@ -245,15 +248,18 @@ class RL_Kernel():
         MultiRL.curr_time = self.curr_time
         MultiRL.curr_scenario = self.curr_scenario
         MultiRL.current_stage = self.current_stage #'training_500'
+        #initial_soc_list = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270]
+        print(initial_soc_list)
         MultiRL.CalOpt(initial_soc_list)
         #MultiRL.optimal_profit_list
 
         #print(MultiRL.optimal_profit_list)
 
-
+        k=0
         for i in range(len(self.check_soc_curve)):
             if self.check_soc_curve[i] == 1:
-                self.second_curve_profit[i] = MultiRL.optimal_profit_list[i]
+                self.second_curve_profit[i] = MultiRL.optimal_profit_list[k]
+                k += 1
         time_2 = time.time()
         print('the time is', time_2 - time_1)
 

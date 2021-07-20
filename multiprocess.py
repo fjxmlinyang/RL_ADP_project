@@ -490,7 +490,8 @@ class MulOptModelSetUp():
         #self.optimal_profit = self.calculate_pts(self.optimal_soc_sum) ##注意这里
 
         obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
-        self.optimal_profit = obj.getValue()
+        #self.optimal_profit = obj.getValue()
+        return obj.getValue()
 
 
     def get_curr_cost(self):
@@ -593,7 +594,8 @@ class MulRLSetUp(MulOptModelSetUp):
             self.lmp.set_up_parameter()
             # curve, time = t+1, scenario= n-1
             self.curve = Curve(100, 0, 3000)
-            self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
+            #self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
+            self.curve.input_curve(self.curr_time + 1, self.curr_scenario-1)
         elif self.curr_time == 22:
             self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
                                                  self.curr_time,
@@ -613,9 +615,10 @@ class MulRLSetUp(MulOptModelSetUp):
              #在这里才用到
         self.set_up_main()
         self.solve_model_main()
-        self.get_optimal_main()
-        return self.optimal_profit
-
+        #self.get_optimal_main()
+        _temp = self.get_optimal_profit()
+        #return self.optimal_profit
+        return _temp
 
 ##the most most important function
 
