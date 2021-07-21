@@ -493,7 +493,6 @@ class MulOptModelSetUp():
         #self.optimal_profit = obj.getValue()
         return obj.getValue()
 
-
     def get_curr_cost(self):
         #put the soc_sum in, we get the profit
         point_profit = []
@@ -539,7 +538,7 @@ class MulOptModelSetUp():
 
 
 
-
+#class MulRLSetUp(OptModelSetUp):
 class MulRLSetUp(MulOptModelSetUp):
 # #psh_system, e_system, lmp, curve, curr_model_para, gur_model
 
@@ -595,7 +594,7 @@ class MulRLSetUp(MulOptModelSetUp):
             # curve, time = t+1, scenario= n-1
             self.curve = Curve(100, 0, 3000)
             #self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
-            self.curve.input_curve(self.curr_time + 1, self.curr_scenario-1)
+            self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
         elif self.curr_time == 22:
             self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
                                                  self.curr_time,

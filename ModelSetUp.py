@@ -239,7 +239,21 @@ class OptModelSetUp():
                 wf.write(st)
 
 
-
+    def x_to_soc(self, point_X):
+        # change soc_sum to soc_1 + soc_2 + soc_3
+        turn_1 = point_X // self.curve.steps
+        rest = point_X % self.curve.steps
+        point_x_soc = []
+        for i in range(self.curve.numbers):
+            if turn_1 > 0:
+                point_x_soc.append(self.curve.steps)
+                turn_1 -= 1
+            elif turn_1 == 0:
+                point_x_soc.append(rest)
+                turn_1 -= 1
+            else:
+                point_x_soc.append(0)
+        return point_x_soc
 
 
 
@@ -300,21 +314,7 @@ class RLSetUp(OptModelSetUp):
         self.get_optimal_profit()
         self.output_optimal()
 
-    def x_to_soc(self, point_X):
-        # change soc_sum to soc_1 + soc_2 + soc_3
-        turn_1 = point_X // self.curve.steps
-        rest = point_X % self.curve.steps
-        point_x_soc = []
-        for i in range(self.curve.numbers):
-            if turn_1 > 0:
-                point_x_soc.append(self.curve.steps)
-                turn_1 -= 1
-            elif turn_1 == 0:
-                point_x_soc.append(rest)
-                turn_1 -= 1
-            else:
-                point_x_soc.append(0)
-        return point_x_soc
+
 
 
 
