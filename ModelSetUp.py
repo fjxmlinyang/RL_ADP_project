@@ -8,16 +8,26 @@ from CurrModelPara import *
 from Curve import *
 
 class OptModelSetUp():
-
-    def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
-        self.gur_model = gur_model
-        self.psh_system = psh_system
-        self.e_system = e_system
-        self.lmp = lmp
-        self.curve = curve
-        self.curr_model_para = curr_model_para
+    def __init__(self):
+        self.gur_model = None
+        self.psh_system = None
+        self.e_system = None
+        self.lmp = None
+        self.curve = None
+        self.curr_model_para = None
         # self.pre_curve = pre_curve
         # self.pre_lmp = pre_lmp
+
+    # def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
+    #     self.gur_model = gur_model
+    #     self.psh_system = psh_system
+    #     self.e_system = e_system
+    #     self.lmp = lmp
+    #     self.curve = curve
+    #     self.curr_model_para = curr_model_para
+    #     # self.pre_curve = pre_curve
+    #     # self.pre_lmp = pre_lmp
+
 ########################################
 ########################################
 #funtions for set up
@@ -229,13 +239,36 @@ class OptModelSetUp():
                 wf.write(st)
 
 
-
+    def x_to_soc(self, point_X):
+        # change soc_sum to soc_1 + soc_2 + soc_3
+        turn_1 = point_X // self.curve.steps
+        rest = point_X % self.curve.steps
+        point_x_soc = []
+        for i in range(self.curve.numbers):
+            if turn_1 > 0:
+                point_x_soc.append(self.curve.steps)
+                turn_1 -= 1
+            elif turn_1 == 0:
+                point_x_soc.append(rest)
+                turn_1 -= 1
+            else:
+                point_x_soc.append(0)
+        return point_x_soc
 
 
 
 class RLSetUp(OptModelSetUp):
 #psh_system, e_system, lmp, curve, curr_model_para, gur_model
+    def __init__(self, psh_system, e_system, lmp, curve, curr_model_para, gur_model):
+        self.gur_model = gur_model
+        self.psh_system = psh_system
+        self.e_system = e_system
+        self.lmp = lmp
+        self.curve = curve
+        self.curr_model_para = curr_model_para
 
+        # self.pre_curve = pre_curve
+        # self.pre_lmp = pre_lmp
 
     def set_up_main(self):
         self.set_up_variable()
@@ -281,21 +314,7 @@ class RLSetUp(OptModelSetUp):
         self.get_optimal_profit()
         self.output_optimal()
 
-    def x_to_soc(self, point_X):
-        # change soc_sum to soc_1 + soc_2 + soc_3
-        turn_1 = point_X // self.curve.steps
-        rest = point_X % self.curve.steps
-        point_x_soc = []
-        for i in range(self.curve.numbers):
-            if turn_1 > 0:
-                point_x_soc.append(self.curve.steps)
-                turn_1 -= 1
-            elif turn_1 == 0:
-                point_x_soc.append(rest)
-                turn_1 -= 1
-            else:
-                point_x_soc.append(0)
-        return point_x_soc
+
 
 
 
