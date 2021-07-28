@@ -15,11 +15,11 @@ class RL_Kernel():
         #self.reward = None
         #self.value = None
         #self.action = None
-        self.alpha = 0.8#0.2
-        self.date = 'April 15 2019'#'March 07 2019'
-        self.LAC_last_windows = 1#0
-        self.probabilistic = 0#1
-        self.RT_DA = 0#1
+        self.alpha = 0.2
+        self.date = 'March 07 2019'
+        self.LAC_last_windows = 0
+        self.probabilistic = 1
+        self.RT_DA = 1
         self.curr_time = None
         self.curr_scenario = None
         self.current_stage ='training_500' #'training_500'
