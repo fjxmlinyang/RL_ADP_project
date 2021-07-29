@@ -331,6 +331,17 @@ class RL_Kernel():
             self.new_curve_slope.append(_temp) #this is the new slope we need
         print(self.new_curve_slope)
 
+        # make sure it is convex
+        # 注意一边是保持边界的所有是非常大或者非常小,同时要保持slope下降
+        for i in range(len(self.new_curve_slope)):
+            # 保持slope下降
+            if i == self.left + 1:
+                if self.new_curve_slope[i] > self.new_curve_slope[self.left]:
+                    self.new_curve_slope[i] = self.new_curve_slope[self.left]
+            elif self.left + 1 < i <= self.right:
+                if self.new_curve_slope[i] > self.new_curve_slope[i - 1]:
+                    self.new_curve_slope[i] = self.new_curve_slope[i - 1]
+
     def get_new_curve_step_3_two_pts(self):
         #need find another point #be careful boundary case
         # 注意你的点是以后面为标准
