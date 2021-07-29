@@ -15,20 +15,20 @@ class RL_Kernel():
         #self.reward = None
         #self.value = None
         #self.action = None
-        self.alpha = 0.2
-        self.date = 'March 07 2019'
-        self.LAC_last_windows = 0
-        self.probabilistic = 1
-        self.RT_DA = 1
+        self.alpha = 0.8
+        self.date = 'March 07 2019'#'April 22 2019'
+        self.LAC_last_windows = 0#0 #1 #这个好像被你改到不会影响结果？
+        self.probabilistic = 0#1#0
+        self.RT_DA = 0 #1#0
         self.curr_time = None
         self.curr_scenario = None
-        self.current_stage ='training_500' #'training_500'
+        self.current_stage ='training_50' #'training_500'
 
     def main_function(self):
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
         self.start = 2
-        self.end = 500
+        self.end = 50
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []
@@ -214,7 +214,7 @@ class RL_Kernel():
 
     def get_new_curve_step_1_multi(self):
         beta = 0.001
-    #here need parallel
+        #让无法到的点设置成为着-10000
         for value in self.second_curve_soc:
             distance = value - float(self.e_system.parameter['EEnd'])
             left_cod = distance <= 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency'])-beta) )
@@ -231,8 +231,7 @@ class RL_Kernel():
             self.second_curve_profit.append(point_y)
             self.check_soc_curve.append(check)
 
-        #here are the multiprocess!!
-
+        #抽取需要做multipross的部分在这里计算
         time_1 = time.time()
         initial_soc_list = []
         for i in range(len(self.check_soc_curve)):
@@ -251,10 +250,8 @@ class RL_Kernel():
         #initial_soc_list = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270]
         print(initial_soc_list)
         MultiRL.CalOpt(initial_soc_list)
-        #MultiRL.optimal_profit_list
 
-        #print(MultiRL.optimal_profit_list)
-
+        #把这个放回到profit里面
         k=0
         for i in range(len(self.check_soc_curve)):
             if self.check_soc_curve[i] == 1:
@@ -267,7 +264,7 @@ class RL_Kernel():
 
 
 
-        #find the boundary point
+        #边界点的处理，find the boundary point
         self.left = 0
         self.right = len(self.check_soc_curve) - 1
 
@@ -291,17 +288,27 @@ class RL_Kernel():
             #change the first back
         #self.second_curve_slope[0] = self.second_curve_slope.intial_slope_set
 
-    #make sure it is convex
+        #make sure it is convex
+        #注意一边是保持边界的所有是非常大或者非常小,同时要保持slope下降
         for i in range(len(self.second_curve_slope)):
             if i < self.left + 1:
                 self.second_curve_slope[i] = 10000 #self.second_curve_slope[self.left + 1]
                 #self.old_curve.point_Y[i] = 10000
             elif i == self.left:
-                self.second_curve_slope[i] == self.second_curve_slope[self.left+1]
+                self.second_curve_slope[i] == self.second_curve_slope[self.left + 1]
             elif i > self.right:
                 self.second_curve_slope[i] = -10000 #self.second_curve_slope[self.right]
                 #self.old_curve.point_Y[i] = 10000
-        print(self.second_curve_slope)
+            #保持slope下降
+            if i == self.left + 1:
+                if self.second_curve_slope[i] > self.second_curve_slope[self.left]:
+                    self.second_curve_slope[i] = self.second_curve_slope[self.left]
+            elif self.left + 1 < i <= self.right:
+                if self.second_curve_slope[i] > self.second_curve_slope[i-1]:
+                    self.second_curve_slope[i] = self.second_curve_slope[i - 1]
+            #elif i == self.right:
+
+
         print(self.second_curve_slope)
 
             # _cur = len(self.second_curve_slope) - i - 1
