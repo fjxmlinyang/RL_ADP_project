@@ -186,8 +186,8 @@ class OptModelSetUp():
             soc = v.X
             self.optimal_soc.append(soc)
         self.optimal_soc_sum = sum(self.optimal_soc)
-        #a = self.optimal_soc_sum
-        #print(a)
+        a = self.optimal_soc_sum
+        print(a)
 
 
     def get_optimal_gen_pump(self):
@@ -203,6 +203,7 @@ class OptModelSetUp():
             #psh0.append(-psh)
             self.optimal_psh_pump.append(psh)
         self.optimal_psh_pump_sum = sum(self.optimal_psh_pump)
+        print(self.optimal_psh_pump_sum)
 ######################################################
 #####################################################
     def get_optimal_profit(self):
@@ -210,6 +211,12 @@ class OptModelSetUp():
         #self.optimal_profit = self.calculate_pts(self.optimal_soc_sum) ##注意这里
         obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
         self.optimal_profit = obj.getValue()
+
+    def get_optimal_profit_with_input(self):
+    #get optimal profit
+        #self.optimal_profit = self.calculate_pts(self.optimal_soc_sum) ##注意这里
+        obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
+        self.optimal_profit_with_input = obj.getValue()
 
     def get_curr_cost(self):
         #put the soc_sum in, we get the profit
@@ -309,10 +316,10 @@ class RLSetUp(OptModelSetUp):
         self.solve_model_main()
         #deal with optimal solution: store and output
         #self.get_optimal_main()
-        self.get_optimal_soc()
-        self.get_optimal_gen_pump()
-        self.get_optimal_profit()
-        self.output_optimal()
+        #self.get_optimal_soc()
+        #self.get_optimal_gen_pump()
+        self.get_optimal_profit_with_input()
+        #self.output_optimal()
 
 
 

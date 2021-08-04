@@ -16,7 +16,7 @@ class RL_Kernel():
         #self.value = None
         #self.action = None
         self.alpha = 0.8
-        self.date = 'March 07 2019'#'April 15 2019'
+        self.date = 'April 01 2019'
         self.LAC_last_windows = 1 #0#1 #必须是1才可以是DA的price
         self.probabilistic = 0 #1#0
         self.RT_DA = 0 #1#0
@@ -27,8 +27,8 @@ class RL_Kernel():
     def main_function(self):
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        self.start = 2
-        self.end = 3
+        self.start = 1
+        self.end = 100
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []
@@ -177,7 +177,7 @@ class RL_Kernel():
 
         pre_model = RLSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model, model_1)
         pre_model.optimization_model_with_input()
-        rt = pre_model.optimal_profit
+        rt = pre_model.optimal_profit_with_input
         return rt
 
 
@@ -333,14 +333,14 @@ class RL_Kernel():
 
         # make sure it is convex
         # 注意一边是保持边界的所有是非常大或者非常小,同时要保持slope下降
-        for i in range(len(self.new_curve_slope)):
-            # 保持slope下降
-            if i == self.left + 1:
-                if self.new_curve_slope[i] > self.new_curve_slope[self.left]:
-                    self.new_curve_slope[i] = self.new_curve_slope[self.left]
-            elif self.left + 1 < i <= self.right:
-                if self.new_curve_slope[i] > self.new_curve_slope[i - 1]:
-                    self.new_curve_slope[i] = self.new_curve_slope[i - 1]
+        # for i in range(len(self.new_curve_slope)):
+        #     # 保持slope下降
+        #     if i == self.left + 1:
+        #         if self.new_curve_slope[i] > self.new_curve_slope[self.left]:
+        #             self.new_curve_slope[i] = self.new_curve_slope[self.left]
+        #     elif self.left + 1 < i <= self.right:
+        #         if self.new_curve_slope[i] > self.new_curve_slope[i - 1]:
+        #             self.new_curve_slope[i] = self.new_curve_slope[i - 1]
 
     def get_new_curve_step_3_two_pts(self):
         #need find another point #be careful boundary case

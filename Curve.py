@@ -13,7 +13,7 @@ class Curve(object):
         self.filename_all = './Output_Curve'
         self.seg_initial()
         self.curve_initial()
-        self.output_initial_curve()
+        #self.output_initial_curve()
 
     
     def seg_initial(self):
