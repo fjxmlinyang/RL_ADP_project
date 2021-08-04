@@ -89,7 +89,7 @@ class ESystem(System):
             self.input_parameter('SOC', 'EStart')
             self.e_start_folder = self.Output_folder
         else:
-            self.filename = self.Output_folder+'/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour-1) + '.csv'
+            self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour - 1) + '.csv'
             self.input_parameter('SOC', 'EStart')
             self.e_start_folder = self.Output_folder
         self.Input_folder = None
