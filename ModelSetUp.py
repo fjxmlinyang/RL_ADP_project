@@ -107,16 +107,16 @@ class OptModelSetUp():
                                     name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
 
     def add_contraint_terminal(self):
-        beta = 0.001
+        beta = 0.001#0.001
         for k in self.e_system.parameter['EName']:
             curr_time = 23 - self.curr_model_para.LAC_bhour
             LHS_1 = self.e[k] - self.e_system.parameter['EEnd']
-            RHS_1 = (curr_time   ) * self.psh_system.parameter['GenMax'] /(self.psh_system.parameter['GenEfficiency']+beta) # PSHmax_g[0] / PSHefficiency[0]
+            RHS_1 = (curr_time) * self.psh_system.parameter['GenMax'] /(self.psh_system.parameter['GenEfficiency'] + beta) # PSHmax_g[0] / PSHefficiency[0]
             self.gur_model.addConstr(LHS_1 <= RHS_1, name='%s_%s' % ('final_upper', k))
         for k in self.e_system.parameter['EName']:
             curr_time = 23 - self.curr_model_para.LAC_bhour
             LHS_2 = self.e[k] - self.e_system.parameter['EEnd']
-            RHS_2 = -(curr_time  ) * self.psh_system.parameter['PumpMax'] * (self.psh_system.parameter['PumpEfficiency']- beta) #PSHmax_p[0] * PSHefficiency[0]
+            RHS_2 = -(curr_time) * self.psh_system.parameter['PumpMax'] * (self.psh_system.parameter['PumpEfficiency']- beta) #PSHmax_p[0] * PSHefficiency[0]
             self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
 
 ##the following is for set upt elements of optimiation problems

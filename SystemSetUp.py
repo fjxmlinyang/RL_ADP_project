@@ -148,6 +148,8 @@ class LMP(System):
                 self.lmp_quantiles.append(1.0 / self.Nlmp_s)
                 # deterministic forecast is the single point prediction
                 self.lmp_scenarios.append(list(df['prd']))
+            #所以要用scneario,我们需要LAC_last_windows = 0, probabilistic = 1, DA = 0
+            #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 0, DA = 0
 
 
         self.Input_folder = None

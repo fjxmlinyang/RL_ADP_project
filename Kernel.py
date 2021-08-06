@@ -15,8 +15,8 @@ class RL_Kernel():
         #self.reward = None
         #self.value = None
         #self.action = None
-        self.alpha = 0.8
-        self.date = 'April 01 2019'
+        self.alpha = None #0, 0.2 , 0.5, 0.8, 1
+        self.date = None#'March 07 2019'
         self.LAC_last_windows = 1 #0#1 #必须是1才可以是DA的price
         self.probabilistic = 0 #1#0
         self.RT_DA = 0 #1#0
@@ -28,7 +28,7 @@ class RL_Kernel():
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
         self.start = 1
-        self.end = 100
+        self.end = 200
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []
@@ -47,12 +47,12 @@ class RL_Kernel():
 
     def output_curr_cost(self):
         # output the psh and soc
-        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + '_' + self.date + '.csv'
+        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + '_' + self.date +'_alpha_' +str(int(self.alpha*10)) +'.csv'
         self.df_total.to_csv(filename)
 
         # output curr_cost
         filename = './Output_Curve' + '/Current_Cost_Total_Results_' + str(
-            self.curr_scenario) + '_' + self.date + '.csv'
+            self.curr_scenario) + '_' + self.date +'_alpha_' + str(int(self.alpha*10)) + '.csv'
         self.df = pd.DataFrame({'Curr_Scenario_Cost_Total': self.Curr_Scenario_Cost_Total})
         self.df.to_csv(filename)
 
@@ -84,7 +84,7 @@ class RL_Kernel():
 
     def output_psh_soc(self):
         self.SOC_Results.append(self.curr_model.optimal_soc_sum)
-        if self.curr_model.optimal_psh_gen_sum > 1:
+        if self.curr_model.optimal_psh_gen_sum > 1:#0.1:
             self.PSH_Results.append(self.curr_model.optimal_psh_gen_sum)
         else:
             self.PSH_Results.append(-self.curr_model.optimal_psh_pump_sum)
@@ -300,13 +300,28 @@ class RL_Kernel():
                 self.second_curve_slope[i] = -10000 #self.second_curve_slope[self.right]
                 #self.old_curve.point_Y[i] = 10000
             #保持slope下降
+
+
+        for i in range(len(self.second_curve_slope)):
             if i == self.left + 1:
                 if self.second_curve_slope[i] > self.second_curve_slope[self.left]:
                     self.second_curve_slope[i] = self.second_curve_slope[self.left]
-            elif self.left + 1 < i <= self.right:
-                if self.second_curve_slope[i] > self.second_curve_slope[i - 1]:
-                    self.second_curve_slope[i] = self.second_curve_slope[i - 1]
-            #elif i == self.right:
+            elif self.left + 1 < i < self.right:
+                # if (self.second_curve_slope[i-1] > self.second_curve_slope[i]) and (self.second_curve_slope[i] > self.second_curve_slope[i+1]):
+                #     self.second_curve_slope[i] = self.second_curve_slope[i]
+                # elif (self.second_curve_slope[i-1] > self.second_curve_slope[i]) and (self.second_curve_slope[i] < self.second_curve_slope[i+1]):
+                #     self.second_curve_slope[i] = self.second_curve_slope[i-1]/2 + self.second_curve_slope[i+1] /2
+                if self.second_curve_slope[i-1] >= self.second_curve_slope[i+1]:
+                    if self.second_curve_slope[i] > self.second_curve_slope[i-1]:
+                        self.second_curve_slope[i] = (self.second_curve_slope[i-1]+self.second_curve_slope[i+1])/2
+                    elif self.second_curve_slope[i] < self.second_curve_slope[i-1]:
+                        self.second_curve_slope[i] = (self.second_curve_slope[i-1]+self.second_curve_slope[i+1])/2
+                elif self.second_curve_slope[i-1] < self.second_curve_slope[i+1]:
+                    if self.second_curve_slope[i] > self.second_curve_slope[i-1]:
+                        self.second_curve_slope[i] = self.second_curve_slope[i-1]
+            elif i == self.right:
+                if self.second_curve_slope[i] > self.second_curve_slope[i-1]:
+                    self.second_curve_slope[i] = self.second_curve_slope[i-1]
 
 
         print(self.second_curve_slope)
@@ -517,7 +532,17 @@ class RL_Kernel():
 
 test = RL_Kernel()
 #test.calculate_old_curve()
-test.main_function()
+#date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
+date_list =['March 07 2019', 'April 01 2019']
+alpha = [0, 0.2, 0.5, 0.8, 1]
+#test.alpha = 1
+#test.date = 'April 22 2019'
+#test.main_function()
+for i in range(len(date_list)):
+    for j in range(len(alpha)):
+        test.alpha = alpha[j]
+        test.date = date_list[i]
+        test.main_function()
 
 
 
