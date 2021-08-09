@@ -23,6 +23,7 @@ class RL_Kernel():
         self.curr_time = None
         self.curr_scenario = None
         self.current_stage ='training_50' #'training_500'
+        #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
 
     def main_function(self):
         time_1 = time.time()
@@ -122,7 +123,10 @@ class RL_Kernel():
         print('lmp_Nlmp_s=', self.lmp.Nlmp_s)
 
         print('################################## curve set up ##################################')
-        self.old_curve = Curve(100, 0, 3000)
+        self.old_curve = Curinput_tuned_initial_curveve(100, 0, 3000)
+        # if LAC_last_windows == 0 and probabilistic == 1 and DA == 0 and self.curr_scenario==1:
+            #self.old_curve.input_tuned_initial_curve()
+
         self.old_curve.input_curve(self.curr_time, self.curr_scenario - 1)
         print(self.old_curve.segments)
 
@@ -543,6 +547,7 @@ for i in range(len(date_list)):
         test.alpha = alpha[j]
         test.date = date_list[i]
         test.main_function()
+
 
 
 

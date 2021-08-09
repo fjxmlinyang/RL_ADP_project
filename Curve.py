@@ -82,6 +82,17 @@ class Curve(object):
             df = pd.DataFrame(self.segments, columns =['soc_segment','slope'])
             df.to_csv(filename, index=False, header=True)
 
+    def input_tuned_initial_curve(self):
+        #only works when this project starts
+        #read 名字 
+        filename = f'{self.filename_all}/Curve_time_{_str}_scenario_{str(scenario)}.csv'
+        df = pd.read_csv(filename)
+        #df_last = df.iloc[-1:]
+        #read 最后一列
+        self.segments = df_last.values.tolist()
+        self.curve_initial() #!!!别忘了
+
+
 
 # curve_1 = Curve(100, 0, 3000)
 #
