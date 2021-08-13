@@ -140,8 +140,10 @@ class LMP(System):
                 for i in range(self.Nlmp_s):
                     # probability of each scenario is evenly distributed
                     self.lmp_quantiles.append(1.0 / self.Nlmp_s)
-                    ##only change here!!!
-                    self.lmp_scenarios.append(list(df[Column_name[self.curr_model.scenario]]))
+    ##only change here!!!
+                    #read_curr = self.curr_model.scenario
+                    read_curr = self.curr_model.scenario % 50
+                    self.lmp_scenarios.append(list(df[Column_name[read_curr]]))
             else:
                 # for deterministic forecast, there is a single scenario
                 self.Nlmp_s = 1

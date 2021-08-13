@@ -75,22 +75,25 @@ class Curve(object):
 
     def output_initial_curve(self):
     #output the initial curve
-        for curr_time in range(24):
+        for curr_time in range(23):
             _str = str(curr_time)
             scenario = 0
             filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
             df = pd.DataFrame(self.segments, columns =['soc_segment','slope'])
             df.to_csv(filename, index=False, header=True)
 
-    def input_tuned_initial_curve(self):
+    def input_tuned_initial_curve(self, last_scenario):
         #only works when this project starts
-        #read 名字 
-        filename = f'{self.filename_all}/Curve_time_{_str}_scenario_{str(scenario)}.csv'
-        df = pd.read_csv(filename)
-        #df_last = df.iloc[-1:]
-        #read 最后一列
-        self.segments = df_last.values.tolist()
-        self.curve_initial() #!!!别忘了
+        #read 名字
+        for curr_time in range(23):
+            _str = str(curr_time)
+            filename = f'{self.filename_all}/Curve_time_{_str}_scenario_{str(last_scenario)}.csv'
+            df = pd.read_csv(filename)
+            # self.segments = df.values.tolist()
+            # self.curve_initial() #!!!别忘了
+            scenario = 0
+            filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
+            df.to_csv(filename, index=False, header=True)
 
 
 

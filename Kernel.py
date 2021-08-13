@@ -28,8 +28,8 @@ class RL_Kernel():
     def main_function(self):
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        self.start = 1
-        self.end = 200
+        self.start = 2000
+        self.end = 3000
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []
@@ -48,7 +48,7 @@ class RL_Kernel():
 
     def output_curr_cost(self):
         # output the psh and soc
-        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + '_' + self.date +'_alpha_' +str(int(self.alpha*10)) +'.csv'
+        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + '_' + self.date +'_alpha_' + str(int(self.alpha*10)) +'.csv'
         self.df_total.to_csv(filename)
 
         # output curr_cost
@@ -123,10 +123,16 @@ class RL_Kernel():
         print('lmp_Nlmp_s=', self.lmp.Nlmp_s)
 
         print('################################## curve set up ##################################')
-        self.old_curve = Curinput_tuned_initial_curveve(100, 0, 3000)
-        # if LAC_last_windows == 0 and probabilistic == 1 and DA == 0 and self.curr_scenario==1:
-            #self.old_curve.input_tuned_initial_curve()
+        self.old_curve = Curve(100, 0, 3000)
 
+
+        ####不同的开始，不同的curve
+        if self.curr_scenario == 1 and self.curr_time == 0:
+            self.old_curve.output_initial_curve()
+
+        if self.LAC_last_windows == 0 and self.probabilistic == 1 and self.RT_DA == 0 and self.curr_scenario == 1:
+            last_scenario = 10000
+            self.old_curve.input_tuned_initial_curve(last_scenario)
         self.old_curve.input_curve(self.curr_time, self.curr_scenario - 1)
         print(self.old_curve.segments)
 
@@ -537,10 +543,13 @@ class RL_Kernel():
 test = RL_Kernel()
 #test.calculate_old_curve()
 #date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
-date_list =['March 07 2019', 'April 01 2019']
-alpha = [0, 0.2, 0.5, 0.8, 1]
-#test.alpha = 1
-#test.date = 'April 22 2019'
+#alpha = [0, 0.2, 0.5, 0.8, 1]
+date_list =['April 01 2019']
+alpha = [0.2]
+#test.end = 100
+test.LAC_last_windows = 0  # 0#1 #必须是1才可以是DA的price
+test.probabilistic = 1  # 1#0
+test.RT_DA = 0  # 1#0
 #test.main_function()
 for i in range(len(date_list)):
     for j in range(len(alpha)):
