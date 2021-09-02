@@ -29,20 +29,44 @@ for i in range(len(LMP_Scenario)-1):
     time_periods.append('T' + str(i))
 
 ###################################### Rolling window starts ##############################################
-# PSH_Results=[]
-# SOC_Results=[]
-# for i in time_periods:
-#     start_hour=time_periods.index(i)
-#     LAC_bhour = start_hour
-#     if start_hour+LAC_window <= len(time_periods):
-#         # 1:RT price data, 0: DA price data
-#         RT_DA=0
-#         PSH_Profitmax = LAC_PSH_Profitmax(LAC_bhour, LAC_last_windows, Input_folder, Output_folder,date,RT_DA,probabilistic, time_total)
-#         PSH_Results.append(PSH_Profitmax[1][0])
-#         SOC_Results.append(PSH_Profitmax[0][0])
+
+# for scen in range(50):
+#     scenario = scen + 1
+#     PSH_Results = []
+#     SOC_Results = []
+#     Price_Results = []
+#     #only one?
+#     for i in time_periods:
+#         start_hour=time_periods.index(i)
+#         LAC_bhour = start_hour
+#         if start_hour+LAC_window <= len(time_periods):
+#             # 1:RT price data, 0: DA price data
+#             RT_DA=0
+#             PSH_Profitmax = Perfect_Opt(LAC_bhour, LAC_last_windows, Input_folder, Output_folder, date, RT_DA, probabilistic, time_total, scenario)
+#             PSH_Results.append(PSH_Profitmax[1][0])
+#             SOC_Results.append(PSH_Profitmax[0][0])
+#             Price_Results.append(PSH_Profitmax[2][0])
+#
+#     filename = Input_folder + '/PSH.csv'
+#     Data = pd.read_csv(filename)
+#     df = pd.DataFrame(Data)
+#     PSHefficiency = list(df['Efficiency'])
+#
+#     filename = Input_folder + '/Reservoir.csv'
+#     Data = pd.read_csv(filename)
+#     df = pd.DataFrame(Data)
+#     Eend = float(df['End'])
+#     PSH_Results.append((SOC_Results[-1] - Eend) / PSHefficiency[0])
+#     SOC_Results.append(Eend)
+#     dict['V' + str(scenario) + '_Price'] = Price_Results[0]
+#     dict['V' + str(scenario) + '_SOC'] = SOC_Results
+#     dict['V' + str(scenario) + '_PSH'] = PSH_Results
 
 ######################################Find the perfect result ##############################################
 dict = {}
+PSH_Results = []
+SOC_Results = []
+Price_Results = []
 for i in range(50):
     scenario = i + 1
     LAC_bhour=len(time_periods)
@@ -62,12 +86,13 @@ for i in range(50):
     Data = pd.read_csv(filename)
     df = pd.DataFrame(Data)
     PSHefficiency = list(df['Efficiency'])
+
     filename = Input_folder + '/Reservoir.csv'
     Data = pd.read_csv(filename)
     df = pd.DataFrame(Data)
     Eend = float(df['End'])
-    #PSH_Results.append((SOC_Results[-1]-Eend)/PSHefficiency[0])
-    #SOC_Results.append(Eend)
+
+
     dict['V' + str(scenario) + '_Price'] = Price_Results[0]
     dict['V' + str(scenario) + '_SOC'] = SOC_Results
     dict['V' + str(scenario) + '_PSH'] = PSH_Results

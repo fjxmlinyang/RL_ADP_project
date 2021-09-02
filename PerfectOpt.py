@@ -35,14 +35,17 @@ def Perfect_Opt(LAC_bhour,LAC_last_windows,Input_folder,Output_folder,date,RT_DA
     if LAC_last_windows:
         # filename = Input_folder + '/LMP_Hindsight' + '.csv'
         #filename = Input_folder + '/prd_dataframe_wlen_'+str(time_total)+'_'+date + '.csv'
-        filename = Input_folder + '/Full_opt_wlen_' + str(time_total) + '_'+ date +'_50' + '.csv'
+        filename = Input_folder + '/Full_opt_wlen_' + str(time_total+1) + '_' + date + '_50' + '.csv'
+
     #Full_opt_wlen_wlen_1_April 01 2019_50.csv
-    else:
-        # filename = Input_folder+'/LMP_Scenarios_' + 'T' + str(LAC_bhour) +'_DA'+ '.csv'
-        if probabilistic:
-            filename = Input_folder + '/DA_lmp_Scenarios_wlen_' + str(time_total-LAC_bhour) + '_'+date+'_50' + '.csv'
-        else:
-            filename = Input_folder + '/prd_dataframe_wlen_'+str(time_total-LAC_bhour)+'_'+date + '.csv'
+    # else:
+    #     # filename = Input_folder+'/LMP_Scenarios_' + 'T' + str(LAC_bhour) +'_DA'+ '.csv'
+    #     if probabilistic:
+    #         filename = Input_folder + '/Full_opt_wlen_' + str(time_total-LAC_bhour) + '_' + date + '_50' + '.csv'
+    #         #filename = Input_folder + '/DA_lmp_Scenarios_wlen_' + str(time_total-LAC_bhour) + '_'+date+'_50' + '.csv'
+    #     else:
+    #         #filename = Input_folder + '/prd_dataframe_wlen_'+str(time_total-LAC_bhour)+'_'+date + '.csv'
+    #         filename = Input_folder + '/Full_opt_wlen_' + str(time_total - LAC_bhour) + '_' + date + '_50' + '.csv'
 
     Data = pd.read_csv(filename)
     df = pd.DataFrame(Data)
@@ -50,12 +53,17 @@ def Perfect_Opt(LAC_bhour,LAC_last_windows,Input_folder,Output_folder,date,RT_DA
     lmp_quantiles = []
     lmp_scenarios = []
     DA_lmp=[]
-    if LAC_last_windows:
-        Nlmp_s = 1
-        # probability of each scenario is evenly distributed
-        lmp_quantiles.append(1.0 / Nlmp_s)
-        _temp_name = 'V' + str(scenario)
-        lmp_scenarios.append(list(df[_temp_name]))
+    Nlmp_s = 1
+    # probability of each scenario is evenly distributed
+    lmp_quantiles.append(1.0 / Nlmp_s)
+    _temp_name = 'V' + str(scenario)
+    lmp_scenarios.append(list(df[_temp_name]))
+    # if LAC_last_windows:
+    #     Nlmp_s = 1
+    #     # probability of each scenario is evenly distributed
+    #     lmp_quantiles.append(1.0 / Nlmp_s)
+    #     _temp_name = 'V' + str(scenario)
+    #     lmp_scenarios.append(list(df[_temp_name]))
         # if RT_DA==1:
         #     lmp_scenarios.append(list(df['RT_LM'P]))
         # else:

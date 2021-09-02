@@ -221,13 +221,15 @@ class OptModelSetUp():
     def get_curr_cost(self):
         #put the soc_sum in, we get the profit
         point_profit = []
+        point_price = 0
         for s in range(self.lmp.Nlmp_s):
             p_s = self.lmp.lmp_quantiles[s]
             for j in self.psh_system.parameter['PSHName']:
                 point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
+                point_price = self.lmp.lmp_scenarios[s][0]
         # for j in self.psh_system.parameter['PSHName']:
         #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
-
+        self.curr_price = point_price
         self.curr_cost = sum(point_profit)
 
 

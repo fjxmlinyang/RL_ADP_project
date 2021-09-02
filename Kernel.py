@@ -28,12 +28,14 @@ class RL_Kernel():
     def main_function(self):
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        self.start = 1
-        self.end = 500
+        self.start = 3
+        self.end = 10
         for curr_scenario in range(self.start, self.end):
+            self.Curr_Scenario_Price_Total = []
             self.PSH_Results = []
             self.SOC_Results = []
             self.curr_scenario_cost_total = 0
+            self.curr_price_total = []
             for i in range(0, 23):
                 self.curr_time = i
                 self.curr_scenario = curr_scenario
@@ -48,7 +50,7 @@ class RL_Kernel():
 
     def output_curr_cost(self):
         # output the psh and soc
-        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + str(
+        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total_' + str(
             self.curr_scenario) + '_' + self.date +'_alpha_' + str(int(self.alpha*10)) +'.csv'
         self.df_total.to_csv(filename)
 
@@ -72,14 +74,21 @@ class RL_Kernel():
 
         self.SOC_Results.append(self.e_system.parameter['EEnd'][0])
 
+        # return price for one scenario
+        self.curr_price_total.append(0)
+        self.Curr_Scenario_Price_Total.append(self.curr_price_total)
+
         self.df = pd.DataFrame(
-            {'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, 'PSH_Results_' + str(self.curr_scenario): self.PSH_Results})
+            {'Price_Results_' + str(self.curr_scenario): self.Curr_Scenario_Price_Total[0], 'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, 'PSH_Results_' + str(self.curr_scenario): self.PSH_Results})
         # df = pd.DataFrame({'PSH_Results_' + str(curr_scenario): PSH_Results})
         # df.to_csv(filename)
         if self.curr_scenario == self.start:
             self.df_total = self.df
         else:
             self.df_total = pd.concat([self.df_total, self.df], axis=1)
+
+
+
 
         ##calculate total cost
         self.Curr_Scenario_Cost_Total.append(self.curr_scenario_cost_total)
@@ -91,10 +100,10 @@ class RL_Kernel():
         else:
             self.PSH_Results.append(-self.curr_model.optimal_psh_pump_sum)
 
-        ##output curr cost
+        ##output curr cost #这里就全部加起来了
         self.curr_scenario_cost_total += self.curr_model.curr_cost
         #
-
+        self.curr_price_total.append(self.curr_model.curr_price)
 
 
     def calculate_optimal_soc(self):
