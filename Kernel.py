@@ -28,8 +28,8 @@ class RL_Kernel():
     def main_function(self):
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        self.start = 3
-        self.end = 10
+        self.start = 1
+        self.end = 500
         for curr_scenario in range(self.start, self.end):
             self.Curr_Scenario_Price_Total = []
             self.PSH_Results = []
@@ -75,8 +75,19 @@ class RL_Kernel():
         self.SOC_Results.append(self.e_system.parameter['EEnd'][0])
 
         # return price for one scenario
-        self.curr_price_total.append(0)
+        # add last price here, then what information I need? scenario, and read the price
+        filename = './Input_Curve/PSH-Rolling Window' + '/April 01 2019' + '/DA_lmp_Scenarios_wlen_' + str(1) + '_'+ self.date+'_50' + '.csv'
+        Data = pd.read_csv(filename)
+        df = pd.DataFrame(Data)
+        cur_list = df['V' + str(self.curr_scenario)]
+
+        self.curr_price_total.append(cur_list[0])
+        self.curr_scenario_cost_total += cur_list[0] * self.PSH_Results[-1]
+
+
+
         self.Curr_Scenario_Price_Total.append(self.curr_price_total)
+
 
         self.df = pd.DataFrame(
             {'Price_Results_' + str(self.curr_scenario): self.Curr_Scenario_Price_Total[0], 'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, 'PSH_Results_' + str(self.curr_scenario): self.PSH_Results})
