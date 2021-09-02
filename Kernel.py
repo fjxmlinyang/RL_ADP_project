@@ -28,8 +28,8 @@ class RL_Kernel():
     def main_function(self):
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        self.start = 2000
-        self.end = 3000
+        self.start = 1
+        self.end = 500
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []
@@ -48,7 +48,8 @@ class RL_Kernel():
 
     def output_curr_cost(self):
         # output the psh and soc
-        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + '_' + self.date +'_alpha_' + str(int(self.alpha*10)) +'.csv'
+        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + str(
+            self.curr_scenario) + '_' + self.date +'_alpha_' + str(int(self.alpha*10)) +'.csv'
         self.df_total.to_csv(filename)
 
         # output curr_cost
