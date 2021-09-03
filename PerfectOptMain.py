@@ -67,6 +67,7 @@ dict = {}
 PSH_Results = []
 SOC_Results = []
 Price_Results = []
+Curr_Profit = []
 for i in range(50):
     scenario = i + 1
     LAC_bhour=len(time_periods)
@@ -96,13 +97,22 @@ for i in range(50):
     dict['V' + str(scenario) + '_Price'] = Price_Results[0]
     dict['V' + str(scenario) + '_SOC'] = SOC_Results
     dict['V' + str(scenario) + '_PSH'] = PSH_Results
-
-
+    curr_profit = 0
+    for i in range(len(PSH_Results)):
+        curr_profit += PSH_Results[i] * Price_Results[0][i]
+    Curr_Profit.append(curr_profit)
 
     # write results
 filename = Output_folder + '/PSH_Profitmax_Rolling_Results_'+ date +'.csv'
 df = pd.DataFrame(dict)
 df.to_csv(filename)
+
+filename = Output_folder + '/Curr_Profitmax_Rolling_Results_'+ date +'.csv'
+df = pd.DataFrame(Curr_Profit)
+df.to_csv(filename)
+
+
+
 
 
 # df =pd.DataFrame({'After_fact_SOC':After_fact_SOC, 'SOC_Results':SOC_Results,'DA_SOC':DA_SOC,

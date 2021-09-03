@@ -28,8 +28,8 @@ class RL_Kernel():
     def main_function(self):
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        self.start = 1
-        self.end = 500
+        self.start = 999
+        self.end = 3000
         for curr_scenario in range(self.start, self.end):
             self.Curr_Scenario_Price_Total = []
             self.PSH_Results = []
@@ -79,7 +79,9 @@ class RL_Kernel():
         filename = './Input_Curve/PSH-Rolling Window' + '/April 01 2019' + '/DA_lmp_Scenarios_wlen_' + str(1) + '_'+ self.date+'_50' + '.csv'
         Data = pd.read_csv(filename)
         df = pd.DataFrame(Data)
-        cur_list = df['V' + str(self.curr_scenario)]
+        number = (self.curr_scenario) % 50 - 1
+        #'V' + str(self.curr_scenario % 50)
+        cur_list = df.iloc[:, number]
 
         self.curr_price_total.append(cur_list[0])
         self.curr_scenario_cost_total += cur_list[0] * self.PSH_Results[-1]
