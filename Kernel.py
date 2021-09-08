@@ -24,19 +24,20 @@ class RL_Kernel():
         self.curr_scenario = None
         self.current_stage ='training_50' #'training_500'
         #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
+        self.time_period = 23 #24? #24-1?
 
     def main_function(self):
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        self.start = 999
-        self.end = 3000
+        self.start = 1
+        self.end = 500
         for curr_scenario in range(self.start, self.end):
             self.Curr_Scenario_Price_Total = []
             self.PSH_Results = []
             self.SOC_Results = []
             self.curr_scenario_cost_total = 0
             self.curr_price_total = []
-            for i in range(0, 23):
+            for i in range(self.time_period):
                 self.curr_time = i
                 self.curr_scenario = curr_scenario
                 self.calculate_optimal_soc()
@@ -76,7 +77,7 @@ class RL_Kernel():
 
         # return price for one scenario
         # add last price here, then what information I need? scenario, and read the price
-        filename = './Input_Curve/PSH-Rolling Window' + '/April 01 2019' + '/DA_lmp_Scenarios_wlen_' + str(1) + '_'+ self.date+'_50' + '.csv'
+        filename = './Input_Curve/PSH-Rolling Window' + '/'+ self.date + '/DA_lmp_Scenarios_wlen_' + str(1) + '_'+ self.date+'_50' + '.csv'
         Data = pd.read_csv(filename)
         df = pd.DataFrame(Data)
         number = (self.curr_scenario) % 50 - 1
@@ -120,8 +121,8 @@ class RL_Kernel():
 
 
     def calculate_optimal_soc(self):
-        self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time, self.curr_scenario, self.current_stage)
-        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+        self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
+                                             self.curr_time, self.curr_scenario, self.current_stage, self.time_period)        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
         print('##############################' + 'scenario = ' + str(self.curr_scenario) + ', and curr_time = ' + str(self.curr_time) + '######################################')
 
@@ -146,7 +147,7 @@ class RL_Kernel():
         print('lmp_Nlmp_s=', self.lmp.Nlmp_s)
 
         print('################################## curve set up ##################################')
-        self.old_curve = Curve(100, 0, 3000)
+        self.old_curve = Curve(100, 0, 3000, self.time_period)
 
 
         ####不同的开始，不同的curve
@@ -172,7 +173,7 @@ class RL_Kernel():
 
     def calculate_new_soc(self, initial_soc):
         pre_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                  self.curr_scenario, self.current_stage)
+                                  self.curr_scenario, self.current_stage, self.time_period)
         # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
         psh_system_2 = PshSystem(pre_model)
@@ -182,23 +183,25 @@ class RL_Kernel():
         e_system_2 = ESystem(pre_model)
         e_system_2.set_up_parameter()
         e_system_2.parameter['EStart'] = initial_soc
-        print('e_system_2.parameter is ' + str(e_system_2.parameter))
-        if self.curr_time != 22:
+        #print('e_system_2.parameter is ' + str(e_system_2.parameter))
+        if self.curr_time != self.time_period - 1:
             # lmp, time = t+1, scenario= n
-            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
-                                       self.curr_scenario, self.current_stage)
+            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
+                                            self.curr_time + 1,
+                                            self.curr_scenario, self.current_stage, self.time_period)
             self.prev_lmp = LMP(self.prev_model)
             self.prev_lmp.set_up_parameter()
             # curve, time = t+1, scenario= n-1
-            self.pre_curve = Curve(100, 0, 3000)
+            self.pre_curve = Curve(100, 0, 3000, self.time_period)
             self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
-        elif self.curr_time == 22:
-            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                       self.curr_scenario, self.current_stage)
+        elif self.curr_time == self.time_period - 1:
+            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
+                                            self.curr_time,
+                                            self.curr_scenario, self.current_stage, self.time_period)
             self.prev_lmp = LMP(self.prev_model)
             self.prev_lmp.set_up_parameter()
 
-            self.pre_curve = Curve(100, 0, 3000)
+            self.pre_curve = Curve(100, 0, 3000, self.time_period)
             self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
 
         model_1 = Model('DAMarket')
@@ -250,17 +253,19 @@ class RL_Kernel():
         #让无法到的点设置成为着-10000
         for value in self.second_curve_soc:
             distance = value - float(self.e_system.parameter['EEnd'])
-            left_cod = distance <= 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency'])-beta) )
-            right_cod = distance > 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency'])+beta) )
+            left_cod = distance <= 0 and (abs(distance) < (self.time_period - self.curr_time) * float(
+                self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency']) - beta))
+            right_cod = distance > 0 and (abs(distance) < (self.time_period - self.curr_time) * float(
+                self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency']) + beta))
             if left_cod or right_cod:
-            #if left_value < 0 and right_value > 0:
-                point_y = 0#self.calculate_new_soc(value)
+                # if left_value < 0 and right_value > 0:
+                point_y = 0  # self.calculate_new_soc(value)
                 check = 1
             else:
-                #point_y = 0
-                point_y = -1000000 #self.calculate_pts(value)
+                # point_y = 0
+                point_y = -1000000  # self.calculate_pts(value)
                 check = 0
-            #FIND the left and right point of using cal_new_soc
+            # FIND the left and right point of using cal_new_soc
             self.second_curve_profit.append(point_y)
             self.check_soc_curve.append(check)
 
@@ -280,6 +285,7 @@ class RL_Kernel():
         MultiRL.curr_time = self.curr_time
         MultiRL.curr_scenario = self.curr_scenario
         MultiRL.current_stage = self.current_stage #'training_500'
+        MultiRL.time_period = self.time_period  # 'training_500'
         #initial_soc_list = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270]
         print(initial_soc_list)
         MultiRL.CalOpt(initial_soc_list)
@@ -563,22 +569,22 @@ class RL_Kernel():
 
 
 
-test = RL_Kernel()
+train = RL_Kernel()
 #test.calculate_old_curve()
 #date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
 #alpha = [0, 0.2, 0.5, 0.8, 1]
-date_list =['April 01 2019']
+date_list =['April 22 2019']
 alpha = [0.2]
 #test.end = 100
-test.LAC_last_windows = 0  # 0#1 #必须是1才可以是DA的price
-test.probabilistic = 1  # 1#0
-test.RT_DA = 0  # 1#0
+train.LAC_last_windows = 0  # 0#1 #必须是1才可以是DA的price
+train.probabilistic = 1  # 1#0
+train.RT_DA = 0  # 1#0
 #test.main_function()
 for i in range(len(date_list)):
     for j in range(len(alpha)):
-        test.alpha = alpha[j]
-        test.date = date_list[i]
-        test.main_function()
+        train.alpha = alpha[j]
+        train.date = date_list[i]
+        train.main_function()
 
 
 

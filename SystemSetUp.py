@@ -35,6 +35,8 @@ class System():
             self.Input_all_total = './Input_bootstrap'
         if curr_model.current_stage == 'test':
             self.Input_all_total = './Input_test'
+        if curr_model.current_stage == 'sample':
+            self.Input_all_total = './Input_prediction'
 
     def input_parameter(self, paranameter_name, in_model_name):
         Data = pd.read_csv(self.filename)
@@ -107,13 +109,15 @@ class LMP(System):
             # filename = Input_folder + '\LMP_Hindsight' + '.csv'
             #self.filename = self.Input_folder + '/prd_dataframe_wlen_24_'+ self.curr_model.date + '.csv'
             self.filename = self.Input_folder + '/prd_dataframe_wlen_' + str(
-                24 - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '.csv'
+                self.curr_model.time_period + 1  - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '.csv'
         else:
             # filename = Input_folder+'\LMP_Scenarios_' + 'T' + str(LAC_bhour) +'_DA'+ '.csv'
             if self.curr_model.probabilistic and self.Input_all_total == './Input_bootstrap':
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_550' + '.csv'
             elif self.curr_model.probabilistic and self.Input_all_total == './Input_test':
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_550' + '.csv'
+            elif self.curr_model.probabilistic and self.Input_all_total == './Input_sample':
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(self.curr_model.time_period + 1 - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '_50' + '.csv'
             elif self.curr_model.probabilistic and self.Input_all_total == './Input_Curve':
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_50' + '.csv'
             else:
@@ -164,9 +168,27 @@ class LMP(System):
         self.filename = None
         self.Output_folder = None
 
+    def predict_set_up_parameter(self):
 
+        self.Input_folder_parent = self.Input_all_total + '/PSH-Rolling Window'
+        self.Input_folder = self.Input_folder_parent + '/' + self.curr_model.date
 
+        self.filename = self.Input_folder + '/Prediction_lmp_Scenarios_wlen_' + str(
+            self.curr_model.time_period + 1 - self.curr_model.LAC_bhour) +'_50' + '.csv'
+        Data = pd.read_csv(self.filename)
+        df = pd.DataFrame(Data)
+        Column_name = list(Data.columns)
+        self.lmp_quantiles = []
+        self.lmp_scenarios = []
+        # DA_lmp=[]???
+        self.Nlmp_s = 1
+        self.lmp_quantiles.append(1.0 / self.Nlmp_s)
+        read_curr = (self.curr_model.scenario - 1)
+        self.lmp_scenarios.append(list(df[Column_name[read_curr]]))
 
+        self.Input_folder = None
+        self.filename = None
+        self.Output_folder = None
 
 
 

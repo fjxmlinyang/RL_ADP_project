@@ -384,12 +384,12 @@ class MulOptModelSetUp():
     def add_constraint_terminal(self):
         beta = 0.001
         for k in self.e_system.parameter['EName']:
-            curr_time = 23 - self.curr_model_para.LAC_bhour
+            curr_time = self.curr_model_para.time_period  - self.curr_model_para.LAC_bhour
             LHS_1 = self.e[k] - self.e_system.parameter['EEnd']
             RHS_1 = (curr_time   ) * self.psh_system.parameter['GenMax'] /(self.psh_system.parameter['GenEfficiency']+beta) # PSHmax_g[0] / PSHefficiency[0]
             self.gur_model.addConstr(LHS_1 <= RHS_1, name='%s_%s' % ('final_upper', k))
         for k in self.e_system.parameter['EName']:
-            curr_time = 23 - self.curr_model_para.LAC_bhour
+            curr_time = self.curr_model_para.time_period - self.curr_model_para.LAC_bhour
             LHS_2 = self.e[k] - self.e_system.parameter['EEnd']
             RHS_2 = -(curr_time  ) * self.psh_system.parameter['PumpMax'] * (self.psh_system.parameter['PumpEfficiency']- beta) #PSHmax_p[0] * PSHefficiency[0]
             self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
@@ -574,7 +574,7 @@ class MulRLSetUp(MulOptModelSetUp):
         # self.current_stage = 'training_500'
         self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
                                              self.curr_time,
-                                             self.curr_scenario, self.current_stage)
+                                             self.curr_scenario, self.current_stage, self.time_period)
         # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
         self.psh_system = PshSystem(self.curr_model_para)
@@ -584,25 +584,25 @@ class MulRLSetUp(MulOptModelSetUp):
         self.e_system.set_up_parameter()
         self.e_system.parameter['EStart'] = initial_soc
 
-        if self.curr_time != 22:
+        if self.curr_time != self.curr_model_para.time_period - 1:
             # lmp, time = t+1, scenario= n
             self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
                                                  self.curr_time + 1,
-                                                 self.curr_scenario, self.current_stage)
+                                                 self.curr_scenario, self.current_stage, self.time_period)
             self.lmp = LMP(self.curr_model_para)
             self.lmp.set_up_parameter()
             # curve, time = t+1, scenario= n-1
-            self.curve = Curve(100, 0, 3000)
-            #self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
+            self.curve = Curve(100, 0, 3000, self.time_period)
+            # self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
             self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
-        elif self.curr_time == 22:
+        elif self.curr_time == self.curr_model_para.time_period - 1:
             self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
                                                  self.curr_time,
-                                                 self.curr_scenario, self.current_stage)
+                                                 self.curr_scenario, self.current_stage, self.time_period)
             self.lmp = LMP(self.curr_model_para)
             self.lmp.set_up_parameter()
 
-            self.curve = Curve(100, 0, 3000)
+            self.curve = Curve(100, 0, 3000, self.time_period)
             self.curve.input_curve(self.curr_time, self.curr_scenario - 1)
 
         self.gur_model = Model('DAMarket')

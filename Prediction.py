@@ -14,13 +14,14 @@ class Prediction():
         self.curr_time = None
         self.curr_scenario = None
         self.current_stage ='sample' #'training_500'
+            # #用sample就调整位置了，需不需要专门一个来记录位置的？
         #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
-        self.time_period = 4 #24-1
+        self.time_period = 23 #24-1
 
     def main_function(self):
         self.Curr_Scenario_Cost_Total = []
         self.start = 1
-        self.end = 35
+        self.end = 5
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []
@@ -75,7 +76,9 @@ class Prediction():
         #     self.old_curve.input_tuned_initial_curve(last_scenario)
         # self.old_curve.input_curve(self.curr_time, self.curr_scenario - 1)
 
-        prediction_scenario = 99
+
+        #choose the scenario you need
+        prediction_scenario = 1999
         self.old_curve.input_prediction_curve(prediction_scenario, self.curr_time)
         print(self.old_curve.segments)
         print(self.old_curve.point_Y)
@@ -145,8 +148,8 @@ test = Prediction()
 #test.calculate_old_curve()
 #date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
 #alpha = [0, 0.2, 0.5, 0.8, 1]
-date_list =['April 01 2019']
-alpha = [0.5]
+date_list =['March 07 2019']
+alpha = [0.2]
 #test.end = 100
 test.LAC_last_windows = 0  # 0#1 #必须是1才可以是DA的price
 test.probabilistic = 0  # 1#0
