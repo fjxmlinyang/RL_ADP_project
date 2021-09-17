@@ -78,7 +78,7 @@ class Prediction():
 
 
         #choose the scenario you need
-        prediction_scenario = 1999
+        prediction_scenario = 2398
         self.old_curve.input_prediction_curve(prediction_scenario, self.curr_time)
         print(self.old_curve.segments)
         print(self.old_curve.point_Y)

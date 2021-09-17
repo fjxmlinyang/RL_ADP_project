@@ -29,8 +29,18 @@ class RL_Kernel():
     def main_function(self):
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        self.start = 1
-        self.end = 500
+        if self.date =='March 07 2019':
+            self.start = 1+1
+            self.end = 600+1
+        if self.date =='April 01 2019':
+            self.start = 600+1
+            self.end = 1200+1
+        if self.date =='April 15 2019':
+            self.start = 1200+1
+            self.end = 1800+1
+        if self.date =='April 22 2019':
+            self.start = 1800+1
+            self.end = 2400+1
         for curr_scenario in range(self.start, self.end):
             self.Curr_Scenario_Price_Total = []
             self.PSH_Results = []
@@ -571,9 +581,9 @@ class RL_Kernel():
 
 train = RL_Kernel()
 #test.calculate_old_curve()
-#date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
+date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
 #alpha = [0, 0.2, 0.5, 0.8, 1]
-date_list =['April 22 2019']
+#date_list =['April 22 2019']
 alpha = [0.2]
 #test.end = 100
 train.LAC_last_windows = 0  # 0#1 #必须是1才可以是DA的price
