@@ -107,16 +107,18 @@ class OptModelSetUp():
                                     name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
 
     def add_contraint_terminal(self):
-        beta = 0.001
+        beta = 0.001  # 0.001
         for k in self.e_system.parameter['EName']:
-            curr_time = 23 - self.curr_model_para.LAC_bhour
+            curr_time = self.curr_model_para.time_period - self.curr_model_para.LAC_bhour
             LHS_1 = self.e[k] - self.e_system.parameter['EEnd']
-            RHS_1 = (curr_time   ) * self.psh_system.parameter['GenMax'] /(self.psh_system.parameter['GenEfficiency']+beta) # PSHmax_g[0] / PSHefficiency[0]
+            RHS_1 = (curr_time) * self.psh_system.parameter['GenMax'] / (
+                        self.psh_system.parameter['GenEfficiency'] + beta)  # PSHmax_g[0] / PSHefficiency[0]
             self.gur_model.addConstr(LHS_1 <= RHS_1, name='%s_%s' % ('final_upper', k))
         for k in self.e_system.parameter['EName']:
-            curr_time = 23 - self.curr_model_para.LAC_bhour
+            curr_time = self.curr_model_para.time_period - self.curr_model_para.LAC_bhour
             LHS_2 = self.e[k] - self.e_system.parameter['EEnd']
-            RHS_2 = -(curr_time  ) * self.psh_system.parameter['PumpMax'] * (self.psh_system.parameter['PumpEfficiency']- beta) #PSHmax_p[0] * PSHefficiency[0]
+            RHS_2 = -(curr_time) * self.psh_system.parameter['PumpMax'] * (
+                        self.psh_system.parameter['PumpEfficiency'] - beta)  # PSHmax_p[0] * PSHefficiency[0]
             self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
 
 ##the following is for set upt elements of optimiation problems
@@ -186,8 +188,8 @@ class OptModelSetUp():
             soc = v.X
             self.optimal_soc.append(soc)
         self.optimal_soc_sum = sum(self.optimal_soc)
-        #a = self.optimal_soc_sum
-        #print(a)
+        a = self.optimal_soc_sum
+        print(a)
 
 
     def get_optimal_gen_pump(self):
@@ -203,6 +205,7 @@ class OptModelSetUp():
             #psh0.append(-psh)
             self.optimal_psh_pump.append(psh)
         self.optimal_psh_pump_sum = sum(self.optimal_psh_pump)
+        print(self.optimal_psh_pump_sum)
 ######################################################
 #####################################################
     def get_optimal_profit(self):
@@ -211,16 +214,24 @@ class OptModelSetUp():
         obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
         self.optimal_profit = obj.getValue()
 
+    def get_optimal_profit_with_input(self):
+    #get optimal profit
+        #self.optimal_profit = self.calculate_pts(self.optimal_soc_sum) ##注意这里
+        obj = self.gur_model.getObjective() #self.calculate_pts(self.optimal_soc_sum)
+        self.optimal_profit_with_input = obj.getValue()
+
     def get_curr_cost(self):
         #put the soc_sum in, we get the profit
         point_profit = []
+        point_price = 0
         for s in range(self.lmp.Nlmp_s):
             p_s = self.lmp.lmp_quantiles[s]
             for j in self.psh_system.parameter['PSHName']:
                 point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
+                point_price = self.lmp.lmp_scenarios[s][0]
         # for j in self.psh_system.parameter['PSHName']:
         #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
-
+        self.curr_price = point_price
         self.curr_cost = sum(point_profit)
 
 
@@ -309,10 +320,10 @@ class RLSetUp(OptModelSetUp):
         self.solve_model_main()
         #deal with optimal solution: store and output
         #self.get_optimal_main()
-        self.get_optimal_soc()
-        self.get_optimal_gen_pump()
-        self.get_optimal_profit()
-        self.output_optimal()
+        #self.get_optimal_soc()
+        #self.get_optimal_gen_pump()
+        self.get_optimal_profit_with_input()
+        #self.output_optimal()
 
 
 

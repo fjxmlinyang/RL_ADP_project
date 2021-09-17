@@ -15,25 +15,39 @@ class RL_Kernel():
         #self.reward = None
         #self.value = None
         #self.action = None
-        self.alpha = 0.2
-        self.date = 'March 07 2019'
-        self.LAC_last_windows = 0
-        self.probabilistic = 1
-        self.RT_DA = 1
+        self.alpha = None #0, 0.2 , 0.5, 0.8, 1
+        self.date = None#'March 07 2019'
+        self.LAC_last_windows = 1 #0#1 #必须是1才可以是DA的price
+        self.probabilistic = 0 #1#0
+        self.RT_DA = 0 #1#0
         self.curr_time = None
         self.curr_scenario = None
-        self.current_stage ='training_500' #'training_500'
+        self.current_stage ='training_50' #'training_500'
+        #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
+        self.time_period = 23 #24? #24-1?
 
     def main_function(self):
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        self.start = 2
-        self.end = 500
+        if self.date =='March 07 2019':
+            self.start = 1+1
+            self.end = 600+1
+        if self.date =='April 01 2019':
+            self.start = 600+1
+            self.end = 1200+1
+        if self.date =='April 15 2019':
+            self.start = 1200+1
+            self.end = 1800+1
+        if self.date =='April 22 2019':
+            self.start = 1800+1
+            self.end = 2400+1
         for curr_scenario in range(self.start, self.end):
+            self.Curr_Scenario_Price_Total = []
             self.PSH_Results = []
             self.SOC_Results = []
             self.curr_scenario_cost_total = 0
-            for i in range(0, 23):
+            self.curr_price_total = []
+            for i in range(self.time_period):
                 self.curr_time = i
                 self.curr_scenario = curr_scenario
                 self.calculate_optimal_soc()
@@ -47,12 +61,13 @@ class RL_Kernel():
 
     def output_curr_cost(self):
         # output the psh and soc
-        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total' + '_' + self.date + '.csv'
+        filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + 'total_' + str(
+            self.curr_scenario) + '_' + self.date +'_alpha_' + str(int(self.alpha*10)) +'.csv'
         self.df_total.to_csv(filename)
 
         # output curr_cost
         filename = './Output_Curve' + '/Current_Cost_Total_Results_' + str(
-            self.curr_scenario) + '_' + self.date + '.csv'
+            self.curr_scenario) + '_' + self.date +'_alpha_' + str(int(self.alpha*10)) + '.csv'
         self.df = pd.DataFrame({'Curr_Scenario_Cost_Total': self.Curr_Scenario_Cost_Total})
         self.df.to_csv(filename)
 
@@ -70,8 +85,25 @@ class RL_Kernel():
 
         self.SOC_Results.append(self.e_system.parameter['EEnd'][0])
 
+        # return price for one scenario
+        # add last price here, then what information I need? scenario, and read the price
+        filename = './Input_Curve/PSH-Rolling Window' + '/'+ self.date + '/DA_lmp_Scenarios_wlen_' + str(1) + '_'+ self.date+'_50' + '.csv'
+        Data = pd.read_csv(filename)
+        df = pd.DataFrame(Data)
+        number = (self.curr_scenario) % 50 - 1
+        #'V' + str(self.curr_scenario % 50)
+        cur_list = df.iloc[:, number]
+
+        self.curr_price_total.append(cur_list[0])
+        self.curr_scenario_cost_total += cur_list[0] * self.PSH_Results[-1]
+
+
+
+        self.Curr_Scenario_Price_Total.append(self.curr_price_total)
+
+
         self.df = pd.DataFrame(
-            {'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, 'PSH_Results_' + str(self.curr_scenario): self.PSH_Results})
+            {'Price_Results_' + str(self.curr_scenario): self.Curr_Scenario_Price_Total[0], 'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, 'PSH_Results_' + str(self.curr_scenario): self.PSH_Results})
         # df = pd.DataFrame({'PSH_Results_' + str(curr_scenario): PSH_Results})
         # df.to_csv(filename)
         if self.curr_scenario == self.start:
@@ -79,25 +111,28 @@ class RL_Kernel():
         else:
             self.df_total = pd.concat([self.df_total, self.df], axis=1)
 
+
+
+
         ##calculate total cost
         self.Curr_Scenario_Cost_Total.append(self.curr_scenario_cost_total)
 
     def output_psh_soc(self):
         self.SOC_Results.append(self.curr_model.optimal_soc_sum)
-        if self.curr_model.optimal_psh_gen_sum > 1:
+        if self.curr_model.optimal_psh_gen_sum > 1:#0.1:
             self.PSH_Results.append(self.curr_model.optimal_psh_gen_sum)
         else:
             self.PSH_Results.append(-self.curr_model.optimal_psh_pump_sum)
 
-        ##output curr cost
+        ##output curr cost #这里就全部加起来了
         self.curr_scenario_cost_total += self.curr_model.curr_cost
         #
-
+        self.curr_price_total.append(self.curr_model.curr_price)
 
 
     def calculate_optimal_soc(self):
-        self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time, self.curr_scenario, self.current_stage)
-        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+        self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
+                                             self.curr_time, self.curr_scenario, self.current_stage, self.time_period)        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
         print('##############################' + 'scenario = ' + str(self.curr_scenario) + ', and curr_time = ' + str(self.curr_time) + '######################################')
 
@@ -122,7 +157,16 @@ class RL_Kernel():
         print('lmp_Nlmp_s=', self.lmp.Nlmp_s)
 
         print('################################## curve set up ##################################')
-        self.old_curve = Curve(100, 0, 3000)
+        self.old_curve = Curve(100, 0, 3000, self.time_period)
+
+
+        ####不同的开始，不同的curve
+        if self.curr_scenario == 1 and self.curr_time == 0:
+            self.old_curve.output_initial_curve()
+
+        if self.LAC_last_windows == 0 and self.probabilistic == 1 and self.RT_DA == 0 and self.curr_scenario == 1:
+            last_scenario = 10000
+            self.old_curve.input_tuned_initial_curve(last_scenario)
         self.old_curve.input_curve(self.curr_time, self.curr_scenario - 1)
         print(self.old_curve.segments)
 
@@ -139,7 +183,7 @@ class RL_Kernel():
 
     def calculate_new_soc(self, initial_soc):
         pre_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                  self.curr_scenario, self.current_stage)
+                                  self.curr_scenario, self.current_stage, self.time_period)
         # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
         psh_system_2 = PshSystem(pre_model)
@@ -149,24 +193,25 @@ class RL_Kernel():
         e_system_2 = ESystem(pre_model)
         e_system_2.set_up_parameter()
         e_system_2.parameter['EStart'] = initial_soc
-        print('e_system_2.parameter is ' + str(e_system_2.parameter))
-
-        if self.curr_time != 22:
+        #print('e_system_2.parameter is ' + str(e_system_2.parameter))
+        if self.curr_time != self.time_period - 1:
             # lmp, time = t+1, scenario= n
-            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time + 1,
-                                       self.curr_scenario, self.current_stage)
+            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
+                                            self.curr_time + 1,
+                                            self.curr_scenario, self.current_stage, self.time_period)
             self.prev_lmp = LMP(self.prev_model)
             self.prev_lmp.set_up_parameter()
             # curve, time = t+1, scenario= n-1
-            self.pre_curve = Curve(100, 0, 3000)
+            self.pre_curve = Curve(100, 0, 3000, self.time_period)
             self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
-        elif self.curr_time == 22:
-            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                       self.curr_scenario, self.current_stage)
+        elif self.curr_time == self.time_period - 1:
+            self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
+                                            self.curr_time,
+                                            self.curr_scenario, self.current_stage, self.time_period)
             self.prev_lmp = LMP(self.prev_model)
             self.prev_lmp.set_up_parameter()
 
-            self.pre_curve = Curve(100, 0, 3000)
+            self.pre_curve = Curve(100, 0, 3000, self.time_period)
             self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
 
         model_1 = Model('DAMarket')
@@ -178,7 +223,7 @@ class RL_Kernel():
 
         pre_model = RLSetUp(psh_system_2, e_system_2, self.prev_lmp, self.pre_curve, pre_model, model_1)
         pre_model.optimization_model_with_input()
-        rt = pre_model.optimal_profit
+        rt = pre_model.optimal_profit_with_input
         return rt
 
 
@@ -186,6 +231,7 @@ class RL_Kernel():
 #after we get the current self.optimal_profit and self.optimal_soc_sum, we have to update the curve
 
     def get_final_curve_main(self):
+        #print('test')
         self.get_new_curve_step_0()
         # new curve: self.new_curve_slope
 
@@ -214,25 +260,26 @@ class RL_Kernel():
 
     def get_new_curve_step_1_multi(self):
         beta = 0.001
-    #here need parallel
+        #让无法到的点设置成为着-10000
         for value in self.second_curve_soc:
             distance = value - float(self.e_system.parameter['EEnd'])
-            left_cod = distance <= 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency'])-beta) )
-            right_cod = distance > 0 and (abs(distance) < (23 - self.curr_time) * float(self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency'])+beta) )
+            left_cod = distance <= 0 and (abs(distance) < (self.time_period - self.curr_time) * float(
+                self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency']) - beta))
+            right_cod = distance > 0 and (abs(distance) < (self.time_period - self.curr_time) * float(
+                self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency']) + beta))
             if left_cod or right_cod:
-            #if left_value < 0 and right_value > 0:
-                point_y = 0#self.calculate_new_soc(value)
+                # if left_value < 0 and right_value > 0:
+                point_y = 0  # self.calculate_new_soc(value)
                 check = 1
             else:
-                #point_y = 0
-                point_y = -1000000 #self.calculate_pts(value)
+                # point_y = 0
+                point_y = -1000000  # self.calculate_pts(value)
                 check = 0
-            #FIND the left and right point of using cal_new_soc
+            # FIND the left and right point of using cal_new_soc
             self.second_curve_profit.append(point_y)
             self.check_soc_curve.append(check)
 
-        #here are the multiprocess!!
-
+        #抽取需要做multipross的部分在这里计算
         time_1 = time.time()
         initial_soc_list = []
         for i in range(len(self.check_soc_curve)):
@@ -248,13 +295,12 @@ class RL_Kernel():
         MultiRL.curr_time = self.curr_time
         MultiRL.curr_scenario = self.curr_scenario
         MultiRL.current_stage = self.current_stage #'training_500'
+        MultiRL.time_period = self.time_period  # 'training_500'
         #initial_soc_list = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270]
         print(initial_soc_list)
         MultiRL.CalOpt(initial_soc_list)
-        #MultiRL.optimal_profit_list
 
-        #print(MultiRL.optimal_profit_list)
-
+        #把这个放回到profit里面
         k=0
         for i in range(len(self.check_soc_curve)):
             if self.check_soc_curve[i] == 1:
@@ -267,7 +313,7 @@ class RL_Kernel():
 
 
 
-        #find the boundary point
+        #边界点的处理，find the boundary point
         self.left = 0
         self.right = len(self.check_soc_curve) - 1
 
@@ -291,17 +337,42 @@ class RL_Kernel():
             #change the first back
         #self.second_curve_slope[0] = self.second_curve_slope.intial_slope_set
 
-    #make sure it is convex
+        #make sure it is convex
+        #注意一边是保持边界的所有是非常大或者非常小,同时要保持slope下降
         for i in range(len(self.second_curve_slope)):
             if i < self.left + 1:
                 self.second_curve_slope[i] = 10000 #self.second_curve_slope[self.left + 1]
                 #self.old_curve.point_Y[i] = 10000
             elif i == self.left:
-                self.second_curve_slope[i] == self.second_curve_slope[self.left+1]
+                self.second_curve_slope[i] == self.second_curve_slope[self.left + 1]
             elif i > self.right:
                 self.second_curve_slope[i] = -10000 #self.second_curve_slope[self.right]
                 #self.old_curve.point_Y[i] = 10000
-        print(self.second_curve_slope)
+            #保持slope下降
+
+
+        for i in range(len(self.second_curve_slope)):
+            if i == self.left + 1:
+                if self.second_curve_slope[i] > self.second_curve_slope[self.left]:
+                    self.second_curve_slope[i] = self.second_curve_slope[self.left]
+            elif self.left + 1 < i < self.right:
+                # if (self.second_curve_slope[i-1] > self.second_curve_slope[i]) and (self.second_curve_slope[i] > self.second_curve_slope[i+1]):
+                #     self.second_curve_slope[i] = self.second_curve_slope[i]
+                # elif (self.second_curve_slope[i-1] > self.second_curve_slope[i]) and (self.second_curve_slope[i] < self.second_curve_slope[i+1]):
+                #     self.second_curve_slope[i] = self.second_curve_slope[i-1]/2 + self.second_curve_slope[i+1] /2
+                if self.second_curve_slope[i-1] >= self.second_curve_slope[i+1]:
+                    if self.second_curve_slope[i] > self.second_curve_slope[i-1]:
+                        self.second_curve_slope[i] = (self.second_curve_slope[i-1]+self.second_curve_slope[i+1])/2
+                    elif self.second_curve_slope[i] < self.second_curve_slope[i-1]:
+                        self.second_curve_slope[i] = (self.second_curve_slope[i-1]+self.second_curve_slope[i+1])/2
+                elif self.second_curve_slope[i-1] < self.second_curve_slope[i+1]:
+                    if self.second_curve_slope[i] > self.second_curve_slope[i-1]:
+                        self.second_curve_slope[i] = self.second_curve_slope[i-1]
+            elif i == self.right:
+                if self.second_curve_slope[i] > self.second_curve_slope[i-1]:
+                    self.second_curve_slope[i] = self.second_curve_slope[i-1]
+
+
         print(self.second_curve_slope)
 
             # _cur = len(self.second_curve_slope) - i - 1
@@ -324,6 +395,17 @@ class RL_Kernel():
             self.new_curve_slope.append(_temp) #this is the new slope we need
         print(self.new_curve_slope)
 
+        # make sure it is convex
+        # 注意一边是保持边界的所有是非常大或者非常小,同时要保持slope下降
+        # for i in range(len(self.new_curve_slope)):
+        #     # 保持slope下降
+        #     if i == self.left + 1:
+        #         if self.new_curve_slope[i] > self.new_curve_slope[self.left]:
+        #             self.new_curve_slope[i] = self.new_curve_slope[self.left]
+        #     elif self.left + 1 < i <= self.right:
+        #         if self.new_curve_slope[i] > self.new_curve_slope[i - 1]:
+        #             self.new_curve_slope[i] = self.new_curve_slope[i - 1]
+
     def get_new_curve_step_3_two_pts(self):
         #need find another point #be careful boundary case
         # 注意你的点是以后面为标准
@@ -343,19 +425,22 @@ class RL_Kernel():
             self.update_point_2_x = self.second_point_soc_sum
             self.update_point_2_y = self.second_point_soc_sum_profit - self.second_point_soc_sum_profit_0
         elif self.first_point_soc_sum_0 < self.curve.lo_bd and self.second_point_soc_sum < self.curve.up_bd:
+            #只有左边出界了
             self.second_point_soc_sum_profit = self.calculate_new_soc(self.second_point_soc_sum)
             self.second_point_soc_sum_profit_0 = self.calculate_new_soc(self.second_point_soc_sum_0)
-            self.first_point_soc_sum_profit = self.calculate_new_soc(self.first_point_soc_sum)
-            self.first_point_soc_sum_profit_0 = self.calculate_new_soc(self.first_point_soc_sum + 1)
-            self.update_point_1_x = self.first_point_soc_sum
-            self.update_point_1_y = self.first_point_soc_sum_profit - self.first_point_soc_sum_profit_0
+            # self.first_point_soc_sum_profit = self.calculate_new_soc(self.first_point_soc_sum)
+            # self.first_point_soc_sum_profit_0 = self.calculate_new_soc(self.first_point_soc_sum + 1)
+
             self.update_point_2_x = self.second_point_soc_sum
             self.update_point_2_y = self.second_point_soc_sum_profit - self.second_point_soc_sum_profit_0
+            # 这个地方是不是有小问题？前后也不一样呀？
+            self.update_point_1_x = self.update_point_2_x   #self.first_point_soc_sum
+            self.update_point_1_y = self.update_point_2_y   #self.first_point_soc_sum_profit_0 - self.first_point_soc_sum_profit
         elif self.first_point_soc_sum_0 >= self.curve.lo_bd and self.second_point_soc_sum > self.curve.up_bd:
-            #self.second_point_soc_sum_profit = self.calculate_new_soc(self.second_point_soc_sum)
-            #self.second_point_soc_sum_profit_0 = self.calculate_new_soc(self.second_point_soc_sum_0)
+            # self.second_point_soc_sum_profit = self.calculate_new_soc(self.second_point_soc_sum)
+            # self.second_point_soc_sum_profit_0 = self.calculate_new_soc(self.second_point_soc_sum_0)
             self.first_point_soc_sum_profit = self.calculate_new_soc(self.first_point_soc_sum)
-            self.first_point_soc_sum_profit_0 = self.calculate_new_soc(self.first_point_soc_sum + 1)
+            self.first_point_soc_sum_profit_0 = self.calculate_new_soc(self.first_point_soc_sum_0)
             self.update_point_1_x = self.first_point_soc_sum
             self.update_point_1_y = self.first_point_soc_sum_profit - self.first_point_soc_sum_profit_0
             self.update_point_2_x = self.update_point_1_x
@@ -369,16 +454,16 @@ class RL_Kernel():
         self.update_point_1 = [self.update_point_1_x, self.update_point_1_y]
         self.update_point_2 = [self.update_point_2_x, self.update_point_2_y]
 
-
+        #four points: previous_point, optimal_soc, second_point,
         # if self.optimal_soc_sum + 1 > self.curve.up_bd:
-        #     self.second_point_soc_sum = self.optimal_soc_sum - 1#self.curve.steps
+        #     self.second_point_soc_sum = self.optimal_soc_sum - 1  #self.curve.steps
         #     self.second_point_profit = self.calculate_new_soc(self.second_point_soc_sum)
         # else:
         #     self.second_point_soc_sum = self.optimal_soc_sum + 1  #self.curve.steps
         #     self.second_point_profit = self.calculate_new_soc(self.second_point_soc_sum)
         #
         # # get previous point profit
-        # if self.optimal_soc_sum - 1 < self.curve.up_bd:
+        # if self.optimal_soc_sum - 1 < self.curve.lo_bd:
         #     self.previous_point_soc_sum = self.optimal_soc_sum + 1 #self.curve.steps
         #     self.previous_point_profit = self.calculate_new_soc(self.previous_point_soc_sum)
         # else:
@@ -412,13 +497,13 @@ class RL_Kernel():
         # self.update_point_2 = [self.update_point_2_x, self.update_point_2_y]
 
 
-    def get_new_curve_step_5_curve_comb(self):
-    #new curve combine with the old_slope
-        self.new_curve_slope = []
-        for i in range(len(self.second_curve_soc)):
-            _temp = (1 - self.alpha)*self.old_curve.point_Y[i] + self.alpha*self.second_curve_slope[i]
-            self.new_curve_slope.append(_temp) #this is the new slope we need
-        print(self.new_curve_slope)
+    # def get_new_curve_step_5_curve_comb(self):
+    # #new curve combine with the old_slope
+    #     self.new_curve_slope = []
+    #     for i in range(len(self.second_curve_soc)):
+    #         _temp = (1 - self.alpha)*self.old_curve.point_Y[i] + self.alpha*self.second_curve_slope[i]
+    #         self.new_curve_slope.append(_temp) #this is the new slope we need
+    #     print(self.new_curve_slope)
 
 
 
@@ -434,7 +519,7 @@ class RL_Kernel():
         #input the original
         curr_time = self.curr_model_para.LAC_bhour
         scenario = self.curr_model_para.scenario
-
+#output_curve_sum这里有问题
         if scenario == 1:
             filename = self.e_system.e_start_folder + '/Curve_' + 'time_' + str(curr_time) + '_scenario_' + str(scenario) + '.csv'
             df = pd.read_csv(filename)
@@ -494,9 +579,23 @@ class RL_Kernel():
 
 
 
-test = RL_Kernel()
+train = RL_Kernel()
 #test.calculate_old_curve()
-test.main_function()
+date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
+#alpha = [0, 0.2, 0.5, 0.8, 1]
+#date_list =['April 22 2019']
+alpha = [0.2]
+#test.end = 100
+train.LAC_last_windows = 0  # 0#1 #必须是1才可以是DA的price
+train.probabilistic = 1  # 1#0
+train.RT_DA = 0  # 1#0
+#test.main_function()
+for i in range(len(date_list)):
+    for j in range(len(alpha)):
+        train.alpha = alpha[j]
+        train.date = date_list[i]
+        train.main_function()
+
 
 
 

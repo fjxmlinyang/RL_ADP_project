@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from csv import reader
 
 class Curve(object):
-    def __init__(self, numbers, lo_bd, up_bd):
+    def __init__(self, numbers, lo_bd, up_bd, time_period):
         self.numbers = numbers
         self.up_bd = up_bd
         self.lo_bd = lo_bd
@@ -13,7 +13,8 @@ class Curve(object):
         self.filename_all = './Output_Curve'
         self.seg_initial()
         self.curve_initial()
-        self.output_initial_curve()
+        self.time_period = time_period
+        #self.output_initial_curve()
 
     
     def seg_initial(self):
@@ -74,14 +75,38 @@ class Curve(object):
         print(self.segments)
 
     def output_initial_curve(self):
-    #output the initial curve
-        for curr_time in range(24):
+        # output the initial curve
+        for curr_time in range(self.time_period):
             _str = str(curr_time)
             scenario = 0
             filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
-            df = pd.DataFrame(self.segments, columns =['soc_segment','slope'])
+            df = pd.DataFrame(self.segments, columns=['soc_segment', 'slope'])
             df.to_csv(filename, index=False, header=True)
 
+    def input_tuned_initial_curve(self, last_scenario):
+        # only works when this project starts
+        # read 名字
+        for curr_time in range(self.time_period):
+            _str = str(curr_time)
+            filename = f'{self.filename_all}/Curve_time_{_str}_scenario_{str(last_scenario)}.csv'
+            df = pd.read_csv(filename)
+            # self.segments = df.values.tolist()
+            # self.curve_initial() #!!!别忘了
+            scenario = 0
+            filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
+            df.to_csv(filename, index=False, header=True)
+
+    def input_prediction_curve(self, last_scenario, curr_time):
+        #only works when this project starts
+        #read 名字
+        _str = str(curr_time)
+        filename = f'{self.filename_all}/Curve_time_{_str}_scenario_{str(last_scenario)}.csv'
+        df = pd.read_csv(filename)
+        self.segments = df.values.tolist()
+        self.curve_df = df
+        self.point_X = self.curve_df['soc_segment'].to_list()
+        self.point_Y = self.curve_df['slope'].to_list()
+        print(self.point_Y)
 
 # curve_1 = Curve(100, 0, 3000)
 #
