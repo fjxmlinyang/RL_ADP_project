@@ -21,7 +21,7 @@ class Prediction():
     def main_function(self):
         self.Curr_Scenario_Cost_Total = []
         self.start = 1
-        self.end = 5
+        self.end = 8
         for curr_scenario in range(self.start, self.end):
             self.PSH_Results = []
             self.SOC_Results = []
@@ -78,8 +78,9 @@ class Prediction():
 
 
         #choose the scenario you need
-        prediction_scenario = 2398
-        self.old_curve.input_prediction_curve(prediction_scenario, self.curr_time)
+        day_section = ['Day 1', 'Day 2', 'Day 3', 'Day 4','Day 5','Day 6', 'Day 7']
+        self.day_section = day_section[0] #20190422 #0307#0401#0415#0422 #4040
+        self.old_curve.input_prediction_curve(self.day_section, self.curr_time)
         print(self.old_curve.segments)
         print(self.old_curve.point_Y)
 
@@ -134,12 +135,12 @@ class Prediction():
 
     def output_curr_cost(self):
         # output the psh and soc
-        filename = './Output_Curve' + '/PSH_Profitmax_Prediction_Results_' + 'total' + '_' + self.date +'_alpha_' + str(int(self.alpha*10)) +'.csv'
+        filename = './Output_Curve' + '/PSH_Profitmax_Prediction_Results_' + 'total' + '_' + self.day_section +'_alpha_' + str(int(self.alpha*10)) +'.csv'
         self.df_total.to_csv(filename)
 
         # output curr_cost
         filename = './Output_Curve' + '/PSH_Profitmax_Prediction_Current_Cost_Results_' + str(
-            self.curr_scenario) + '_' + self.date +'_alpha_' + str(int(self.alpha*10)) + '.csv'
+            self.curr_scenario) + '_' + self.day_section +'_alpha_' + str(int(self.alpha*10)) + '.csv'
         self.df = pd.DataFrame({'Curr_Scenario_Cost_Total': self.Curr_Scenario_Cost_Total})
         self.df.to_csv(filename)
 

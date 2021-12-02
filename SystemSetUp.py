@@ -46,6 +46,12 @@ class System():
         self.parameter[in_model_name] = ret  # [0]
 
 
+    def input_parameter_more_row(self, in_model_name, row, column):
+        Data = pd.read_csv(self.filename)
+        df = pd.DataFrame(Data)
+        self.parameter[in_model_name] = df.iloc[row, column]  # [0]
+        print(self.parameter[in_model_name])
+
 class PshSystem(System):
 
     def set_up_parameter(self):
@@ -79,7 +85,47 @@ class ESystem(System):
         self.input_parameter('Max', 'EMax')
         self.input_parameter('Name', 'EName') 
         self.input_parameter('End', 'EEnd')
+        #self.input_parameter('Start', 'EStart')
 
+        self.Output_folder='./Output_Curve'
+        #here are for rolling model
+        #here we can set the benchmark?
+
+        if self.curr_model.LAC_bhour == 0:
+            self.input_parameter('Start', 'EStart')
+            self.e_start_folder = self.Output_folder
+        elif self.curr_model.LAC_last_windows:
+            self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour - 1) + '.csv'
+            self.input_parameter('SOC', 'EStart')
+            self.e_start_folder = self.Output_folder
+        else:
+            self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour - 1) + '.csv'
+            self.input_parameter('SOC', 'EStart')
+            self.e_start_folder = self.Output_folder
+        self.Input_folder = None
+        self.filename = None
+        self.Output_folder = None
+
+
+    def set_up_parameter_with_seven_day(self):
+##这个是给标量 #how to input one by one?
+        self.Input_folder_parent = self.Input_all_total + '/PSH-Rolling Window'
+        self.Input_folder = self.Input_folder_parent +'/'+ self.curr_model.date
+
+
+
+
+
+        cur_senario = self.curr_model.scenario % 50 - 1
+        self.filename = self.Input_folder + '/ReserviorSevenDayStartEnd.csv'
+        self.input_parameter_more_row('EEnd', 1 , cur_senario)
+        self.input_parameter_more_row('EStart', 0 , cur_senario)
+
+
+        self.filename = self.Input_folder + '/Reservoir.csv'
+        self.input_parameter('Min', 'EMin')
+        self.input_parameter('Max', 'EMax')
+        self.input_parameter('Name', 'EName')
         self.Output_folder='./Output_Curve'
         #here are for rolling model
         #here we can set the benchmark?
@@ -94,6 +140,8 @@ class ESystem(System):
             self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour - 1) + '.csv'
             self.input_parameter('SOC', 'EStart')
             self.e_start_folder = self.Output_folder
+
+
         self.Input_folder = None
         self.filename = None
         self.Output_folder = None
@@ -115,7 +163,7 @@ class LMP(System):
             if self.curr_model.probabilistic and self.Input_all_total == './Input_bootstrap':
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_550' + '.csv'
             elif self.curr_model.probabilistic and self.Input_all_total == './Input_test':
-                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_550' + '.csv'
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_50' + '.csv'
             elif self.curr_model.probabilistic and self.Input_all_total == './Input_sample':
                 self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(self.curr_model.time_period + 1 - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '_50' + '.csv'
             elif self.curr_model.probabilistic and self.Input_all_total == './Input_Curve':

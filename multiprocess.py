@@ -581,7 +581,8 @@ class MulRLSetUp(MulOptModelSetUp):
         self.psh_system.set_up_parameter()
 
         self.e_system = ESystem(self.curr_model_para)
-        self.e_system.set_up_parameter()
+        #self.e_system.set_up_parameter()
+        self.e_system.set_up_parameter_with_seven_day()
         self.e_system.parameter['EStart'] = initial_soc
 
         if self.curr_time != self.curr_model_para.time_period - 1:

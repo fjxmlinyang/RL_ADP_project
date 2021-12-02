@@ -22,11 +22,13 @@ class RL_Kernel():
         self.RT_DA = 0 #1#0
         self.curr_time = None
         self.curr_scenario = None
-        self.current_stage ='training_50' #'training_500'
+        self.current_stage ='test' #'training_50'
         #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
         self.time_period = 23 #24? #24-1?
 
     def main_function(self):
+        self.start = 1
+        self.end = 1000 + 1
         time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
         if self.date =='March 07 2019':
@@ -76,18 +78,31 @@ class RL_Kernel():
 
         filename = './Output_Curve' + '/PSH_Profitmax_Rolling_Results_' + str(
             self.curr_scenario) + '_' + self.date + '.csv'
-        if self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0] > 0.1:
+        # if self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0] > 0.1:
+        #     self.PSH_Results.append(
+        #         (self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0]) * self.psh_system.parameter['GenEfficiency'][0])
+        # else:
+        #     self.PSH_Results.append(
+        #         (self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0]) / self.psh_system.parameter['PumpEfficiency'][0])
+        #
+        # self.SOC_Results.append(self.e_system.parameter['EEnd'][0])
+
+
+        if self.SOC_Results[-1] - self.e_system.parameter['EEnd'] > 0.1:
             self.PSH_Results.append(
-                (self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0]) * self.psh_system.parameter['GenEfficiency'][0])
+                (self.SOC_Results[-1] - self.e_system.parameter['EEnd']) * self.psh_system.parameter['GenEfficiency'][0])
         else:
             self.PSH_Results.append(
-                (self.SOC_Results[-1] - self.e_system.parameter['EEnd'][0]) / self.psh_system.parameter['PumpEfficiency'][0])
+                (self.SOC_Results[-1] - self.e_system.parameter['EEnd']) / self.psh_system.parameter['PumpEfficiency'][0])
 
-        self.SOC_Results.append(self.e_system.parameter['EEnd'][0])
+        self.SOC_Results.append(self.e_system.parameter['EEnd'])
 
         # return price for one scenario
         # add last price here, then what information I need? scenario, and read the price
-        filename = './Input_Curve/PSH-Rolling Window' + '/'+ self.date + '/DA_lmp_Scenarios_wlen_' + str(1) + '_'+ self.date+'_50' + '.csv'
+        filename = './Input_Curve'+'/PSH-Rolling Window' + '/'+ self.date + '/DA_lmp_Scenarios_wlen_' + str(1) + '_'+ self.date+'_50' + '.csv'
+        if self.current_stage == 'test':
+            filename = './Input_test' + '/PSH-Rolling Window' + '/' + self.date + '/DA_lmp_Scenarios_wlen_' + str(
+                1) + '_' + self.date + '_50' + '.csv'
         Data = pd.read_csv(filename)
         df = pd.DataFrame(Data)
         number = (self.curr_scenario) % 50 - 1
@@ -145,7 +160,8 @@ class RL_Kernel():
 
         print('################################## e_system set up ##################################')
         self.e_system = ESystem(self.curr_model_para)
-        self.e_system.set_up_parameter()
+        #self.e_system.set_up_parameter()
+        self.e_system.set_up_parameter_with_seven_day()
         print(self.e_system.parameter)
 
         print('################################## lmp_system set up ##################################')
@@ -191,7 +207,13 @@ class RL_Kernel():
 
 
         e_system_2 = ESystem(pre_model)
-        e_system_2.set_up_parameter()
+
+        #for seven day, we change it to
+        e_system_2.set_up_parameter_with_seven_day()
+        #e_system_2.set_up_parameter()
+
+
+
         e_system_2.parameter['EStart'] = initial_soc
         #print('e_system_2.parameter is ' + str(e_system_2.parameter))
         if self.curr_time != self.time_period - 1:
@@ -510,9 +532,15 @@ class RL_Kernel():
     def output_curve(self):
     #output the curve
         scenario = self.curr_scenario
-        filename = self.e_system.e_start_folder + '/Curve_' + 'time_' + str(self.curr_model_para.LAC_bhour) + '_scenario_' +  str(scenario) + '.csv'
-        df = pd.DataFrame(self.curve.segments, columns =['soc_segment','slope'])
-        df.to_csv(filename, index=False, header=True)
+        if scenario != self.end - 1:
+            filename = self.e_system.e_start_folder + '/Curve_' + 'time_' + str(self.curr_model_para.LAC_bhour) + '_scenario_' +  str(scenario) + '.csv'
+            df = pd.DataFrame(self.curve.segments, columns =['soc_segment','slope'])
+            df.to_csv(filename, index=False, header=True)
+        elif scenario == self.end - 1:
+            filename = self.e_system.e_start_folder + '/'+str(self.date)+'_'+'Curve_' + 'time_' + str(
+            self.curr_model_para.LAC_bhour) + '_scenario_' + str(scenario) + '.csv'
+            df = pd.DataFrame(self.curve.segments, columns=['soc_segment', 'slope'])
+            df.to_csv(filename, index=False, header=True)
 
 
     def output_curve_sum(self):
@@ -521,10 +549,10 @@ class RL_Kernel():
         scenario = self.curr_model_para.scenario
 #output_curve_sum这里有问题
         if scenario == 1:
-            filename = self.e_system.e_start_folder + '/Curve_' + 'time_' + str(curr_time) + '_scenario_' + str(scenario) + '.csv'
+            filename = self.e_system.e_start_folder + '/'+'Curve_' + 'time_' + str(curr_time) + '_scenario_' + str(scenario) + '.csv'
             df = pd.read_csv(filename)
         else:
-            filename = self.e_system.e_start_folder + '/Curve_total_' + 'time_' + str(self.curr_model_para.LAC_bhour) + '.csv'
+            filename = self.e_system.e_start_folder + '/'+'Curve_total_' + 'time_' + str(self.curr_model_para.LAC_bhour) + '.csv'
             df = pd.read_csv(filename)
         #output the current
 
@@ -581,9 +609,9 @@ class RL_Kernel():
 
 train = RL_Kernel()
 #test.calculate_old_curve()
-date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
+#date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
 #alpha = [0, 0.2, 0.5, 0.8, 1]
-#date_list =['April 22 2019']
+date_list =['Day 1 2019','Day 2 2019', 'Day 3 2019', 'Day 4 2019', 'Day 5 2019', 'Day 6 2019', 'Day 7 2019']
 alpha = [0.2]
 #test.end = 100
 train.LAC_last_windows = 0  # 0#1 #必须是1才可以是DA的price

@@ -100,7 +100,9 @@ class Curve(object):
         #only works when this project starts
         #read 名字
         _str = str(curr_time)
-        filename = f'{self.filename_all}/Curve_time_{_str}_scenario_{str(last_scenario)}.csv'
+        #filename = f'{self.filename_all}/Curve_time_{_str}_scenario_{str(last_scenario)}.csv'
+        filename = self.filename_all +'/' + last_scenario + ' 2019_Curve_time_0_scenario_1000.csv'
+        #filename = 'Day 1 2019_Curve_time_0_scenario_1000.csv'
         df = pd.read_csv(filename)
         self.segments = df.values.tolist()
         self.curve_df = df
