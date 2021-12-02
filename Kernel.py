@@ -25,7 +25,7 @@ class RL_Kernel():
         self.current_stage ='test' #'training_50'
         #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
         self.time_period = 23 #24? #24-1?
-
+#
     def main_function(self):
         self.start = 1
         self.end = 1000 + 1
